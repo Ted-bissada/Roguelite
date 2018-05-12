@@ -27,11 +27,13 @@ let character = createCharacter();//creates and holds character
 let enemies = []; //array of all currently active enemies
 let miscObjects = []; // other interactive objects
 
-let animation = requestAnimationFrame(gameLoop); //calls game loop 60 times a second
 
-drawBackground();
-//drawMain();
-//drawUI();
+window.onload = function(){
+    let animation = requestAnimationFrame(gameLoop); //calls game loop 60 times a second
+    drawBackground();
+};
+
+
 
 function gameLoop()
 {
@@ -52,7 +54,7 @@ function drawBackground()// draws background layer should only be called during 
 {
     //for(let i =0;i<20;i++)
         //for(let q =0;q<20;q++)
-            bgSurface.drawImage(backgroundImage,31,31,81,93,110,110,81*4,93*4);
+    bgSurface.drawImage(backgroundImage,31,31,81,93,110,110,81*4,93*4);
 }
 
 function drawMain() //draws all enemies player and interactive objects
