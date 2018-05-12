@@ -1,11 +1,15 @@
 let fgCanvas = document.getElementById("fg");//getting canvas
 let fgSurface = fgCanvas.getContext("2d");//setting canvas for drawing
+fgSurface.imageSmoothingEnabled = false;
 
 let bgCanvas = document.getElementById("bg");//getting canvas
 let bgSurface = bgCanvas.getContext("2d");//setting canvas for drawing
+bgSurface.imageSmoothingEnabled = false;
+
 
 let uiCanvas = document.getElementById("ui");//getting canvas
 let uiSurface = uiCanvas.getContext("2d");//setting canvas for drawing
+uiSurface.imageSmoothingEnabled = false;
 uiSurface.fillStyle = 'white';//text colour for text used on canvas
 
 //var audioAttack = new Audio();//example audio loading
@@ -46,15 +50,15 @@ function render() //clears screen and draws all elements in turn
 
 function drawBackground()// draws background layer should only be called during screen transitions
 {
-    for(let i =0;i<20;i++)
-        for(let q =0;q<20;q++)
-            bgSurface.drawImage(backgroundImage,100,100,10,10,30*i,30*q,30,30);
+    //for(let i =0;i<20;i++)
+        //for(let q =0;q<20;q++)
+            bgSurface.drawImage(backgroundImage,31,31,81,93,110,110,81*4,93*4);
 }
 
 function drawMain() //draws all enemies player and interactive objects
 {
     fgSurface.clearRect(0,0,600,600);
-    fgSurface.drawImage(backgroundImage,195,160,15,20,character.cordinates[0],character.cordinates[1],15,20);
+    fgSurface.drawImage(backgroundImage,195,160,15,20,character.cordinates[0],character.cordinates[1],15*3,20*3);
 
 }
 
@@ -64,6 +68,8 @@ function drawUI() // draws UI ontop of everything else
     uiSurface.font = "10px Courier New";
     uiSurface.fillText(character.cordinates[0].toString(), 50, 610);
     uiSurface.fillText(character.cordinates[1].toString(), 50, 630);
+    uiSurface.fillText(character.state.toString(), 100, 610);
+
 }
 
 
@@ -142,11 +148,24 @@ function createCharacter() //generates and contains game character
     obj.cordinates = [300,300]; //player characters cordinates stored as x,y pair
     obj.health = 5;
     obj.state = 0; //player characters current animation state
+    obj.currentWeapon = generateWeapon(1,20,1,0);
     obj.attackChargeTimer = 0;
-    obj.moveLeft = function(){character.cordinates[0]--;};
-    obj.moveRight = function(){character.cordinates[0]++;};
-    obj.moveUp = function(){character.cordinates[1]--;};
-    obj.moveDown = function(){character.cordinates[1]++;};
+    obj.floorLevel = 0;
+    obj.speed= 2;
+    obj.moveLeft = function(){character.cordinates[0]-=character.speed;character.state = 4;};
+    obj.moveRight = function(){character.cordinates[0]+=character.speed;character.state = 2;};
+    obj.moveUp = function(){character.cordinates[1]-=character.speed;character.state = 1;};
+    obj.moveDown = function(){character.cordinates[1]+=character.speed;character.state = 3;};
     obj.attack = function(){};
+    obj.bullets = [];
     return (obj);
+}
+
+function generateWeapon(dmg,range,bullets,special)
+{
+    let obj = {};
+    obj.dmg = dmg;
+    obj.range = range;
+    obj.bullets = bullets;
+    obj.special = special;
 }
