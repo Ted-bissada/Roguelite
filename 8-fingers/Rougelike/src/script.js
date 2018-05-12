@@ -1,11 +1,12 @@
-let canvas = document.getElementById("gameArea");//getting canvas
-canvas.width = 600;//setting canvas size
-canvas.height = 630;//bottom 30 pixels reserved for ui
-let surface = canvas.getContext("2d");//setting canvas for drawing
-surface.fillStyle = 'white';//text colour for text used on canvas
+let fgCanvas = document.getElementById("fg");//getting canvas
+let fgSurface = fgCanvas.getContext("2d");//setting canvas for drawing
 
-let backgroundCanvas = document.getElementById("backgroundCanvas");//offscreen canvas for holding the background image
-let backCan = backgroundCanvas.getContext("2d");//the background image will be constructed once per room then stored here
+let bgCanvas = document.getElementById("bg");//getting canvas
+let bgSurface = bgCanvas.getContext("2d");//setting canvas for drawing
+
+let uiCanvas = document.getElementById("ui");//getting canvas
+let uiSurface = uiCanvas.getContext("2d");//setting canvas for drawing
+uiSurface.fillStyle = 'white';//text colour for text used on canvas
 
 //var audioAttack = new Audio();//example audio loading
 //audioAttack.src = "data/foo.mp3";
@@ -24,6 +25,9 @@ let miscObjects = []; // other interactive objects
 
 let animation = requestAnimationFrame(gameLoop); //calls game loop 60 times a second
 
+drawBackground();
+//drawMain();
+//drawUI();
 
 function gameLoop()
 {
@@ -35,26 +39,31 @@ function gameLoop()
 
 function render() //clears screen and draws all elements in turn
 {
-    surface.clearRect(0,0,600,630);
-    drawBackground();
     drawMain();
     drawUI();
 }
 
 
-function drawBackground()// draws background layer
+function drawBackground()// draws background layer should only be called during screen transitions
 {
-
+    for(let i =0;i<20;i++)
+        for(let q =0;q<20;q++)
+            bgSurface.drawImage(backgroundImage,100,100,10,10,30*i,30*q,30,30);
 }
 
 function drawMain() //draws all enemies player and interactive objects
 {
+    fgSurface.clearRect(0,0,600,600);
+    fgSurface.drawImage(backgroundImage,195,160,15,20,character.cordinates[0],character.cordinates[1],15,20);
 
 }
 
 function drawUI() // draws UI ontop of everything else
 {
-
+    uiSurface.clearRect(0,600,600,700);
+    uiSurface.font = "10px Courier New";
+    uiSurface.fillText(character.cordinates[0].toString(), 50, 610);
+    uiSurface.fillText(character.cordinates[1].toString(), 50, 630);
 }
 
 
@@ -96,25 +105,24 @@ function killAllOnemies() //kills every enemy and object on screen used during s
 
 }
 
-function spawnAllObjects() //takes the room data and spawns the appropriate enemies and objects
+function spawnAllObjects() //takes the room data and spawns the appropriate enemies and objects used during screen transitions
 {
 
 }
 
-function generateFloorMap (x,y) //generates and returns the floor map this is place holder code
+function generateFloorMap () //generates and returns the floor map
 {
-    let arr = [x][y];
-        for (let i = 0;i<x;i++)
-            for (let q = 0;q<y;q++)
-                arr[i][q] = generateRoomMap()
+
 }
 
-function generateRoomMap () //called by floor map to generate each room this is place holder code
+function generateRoomMap () //called by floor map generator to generate each room
 {
-    let arr = [20][20];
-    for (let i = 0;i<x;i++)
-        for (let q = 0;q<y;q++)
-            arr[i][q] = 1;
+
+}
+
+function generateTile () //called by room map generator generates to generate tile properties
+{
+
 }
 
 function keyDownHandler(e) //appends key to array if it is not already present
@@ -131,19 +139,14 @@ function keyUpHandler(e) //removes specified key from array
 function createCharacter() //generates and contains game character
 {
     let obj = {};
-    obj.cordinates = [300,300];
-    obj.state = 255; //i have decided 255 is the inital state on spawn
+    obj.cordinates = [300,300]; //player characters cordinates stored as x,y pair
+    obj.health = 5;
+    obj.state = 0; //player characters current animation state
     obj.attackChargeTimer = 0;
-    obj.currentRoom = [0][0];
-    obj.moveLeft = function(){};
-    obj.moveRight = function(){};
-    obj.moveUp = function(){};
-    obj.moveDown = function(){};
+    obj.moveLeft = function(){character.cordinates[0]--;};
+    obj.moveRight = function(){character.cordinates[0]++;};
+    obj.moveUp = function(){character.cordinates[1]--;};
+    obj.moveDown = function(){character.cordinates[1]++;};
     obj.attack = function(){};
     return (obj);
-}
-
-function generateBackground()
-{
-
 }

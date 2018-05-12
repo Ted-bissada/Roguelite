@@ -1,4 +1,4 @@
-div
+#subtitle
 {
     width: 600px;
     text-align: center;
@@ -8,11 +8,10 @@ div
 }
 #main
 {
-    height: 630px;
-    border: 2px solid darkcyan;
-    margin: 5px;
-    position: relative;
+    height: 700px;
+    width: 600px;
     background-color: black;
+    position: relative;
 }
 h1
 {
@@ -21,7 +20,20 @@ h1
     color: cadetblue;
 }
 
-#backgroundCanvas
+#bg
 {
-    display: none;
+    position: absolute;
+    background-color: transparent;
+}
+
+#fg
+{
+    position: absolute;
+    background-color: transparent;
+}
+
+#ui
+{
+    position: absolute;
+    background-color: transparent;
 }
