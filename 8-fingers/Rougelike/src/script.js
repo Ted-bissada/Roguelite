@@ -60,7 +60,10 @@ function drawBackground()// draws background layer should only be called during 
 function drawMain() //draws all enemies player and interactive objects
 {
     fgSurface.clearRect(0,0,600,600);
-    fgSurface.drawImage(backgroundImage,195,160,15,20,character.cordinates[0],character.cordinates[1],15*3,20*3);
+    fgSurface.drawImage(backgroundImage,195,160,15,20,character.cordinates[0],character.cordinates[1],15*4,20*4);
+    for (let i=0;i<character.bullets.length;i++)
+        fgSurface.drawImage(backgroundImage,190,130,10,10,character.bullets[i].cordinates[0],character.bullets[i].cordinates[1],
+            character.bullets[i].cordinates[2],character.bullets[i].cordinates[3]);
 
 }
 
@@ -71,7 +74,7 @@ function drawUI() // draws UI ontop of everything else
     uiSurface.fillText(character.cordinates[0].toString(), 50, 610);
     uiSurface.fillText(character.cordinates[1].toString(), 50, 630);
     uiSurface.fillText(character.state.toString(), 100, 610);
-
+    uiSurface.fillText(character.attackChargeTimer.toString(), 100, 630);
 }
 
 
@@ -91,7 +94,17 @@ function userInputHandler() //accepts and applies player input
 
 function gameLogic() //updates all game functions and ai
 {
-
+    for (let i=0;i<character.bullets.length;i++)
+    {
+        character.bullets[i].move();
+        if (character.bullets[i].timeToLive() <= 0)
+        {
+            character.bullets.splice(i,1);
+            i--;
+        }
+    }
+    if (character.attackChargeTimer > 0)
+        character.attackChargeTimer--;
 }
 
 
@@ -147,10 +160,10 @@ function keyUpHandler(e) //removes specified key from array
 function createCharacter() //generates and contains game character
 {
     let obj = {};
-    obj.cordinates = [300,300]; //player characters cordinates stored as x,y pair
+    obj.cordinates = [300,300,15,20]; //player characters cordinates stored as x,y pair
     obj.health = 5;
-    obj.state = 0; //player characters current animation state
-    obj.currentWeapon = generateWeapon(1,20,1,0);
+    obj.state = 1; //player characters current animation state
+    obj.currentWeapon = generateWeapon(1,20,1,5,0);
     obj.attackChargeTimer = 0;
     obj.floorLevel = 0;
     obj.speed= 2;
@@ -158,16 +171,45 @@ function createCharacter() //generates and contains game character
     obj.moveRight = function(){character.cordinates[0]+=character.speed;character.state = 2;};
     obj.moveUp = function(){character.cordinates[1]-=character.speed;character.state = 1;};
     obj.moveDown = function(){character.cordinates[1]+=character.speed;character.state = 3;};
-    obj.attack = function(){};
+    obj.attack = function()
+    {
+        if (this.attackChargeTimer == 0)
+        {
+            character.bullets.push(newBullet());
+            this.attackChargeTimer = this.currentWeapon.reload;
+        }
+    };
     obj.bullets = [];
     return (obj);
 }
 
-function generateWeapon(dmg,range,bullets,special)
+function generateWeapon(dmg,range,bullets,reload,special)
 {
     let obj = {};
     obj.dmg = dmg;
     obj.range = range;
     obj.bullets = bullets;
+    obj.reload = reload;
     obj.special = special;
+    return (obj);
+}
+
+function newBullet()
+{
+    let obj = {};
+    obj.speed = 5;
+    obj.cordinates = [character.cordinates[0],character.cordinates[1],10,10];
+    obj.direction = character.state;
+    obj.lifetime = character.currentWeapon.range;
+    obj.timeToLive = function(){this.lifetime--;return(this.lifetime)};
+    obj.move = function () {
+        if(this.direction === 4)
+            this.cordinates[0]-=this.speed;
+        else if(this.direction === 2)
+            this.cordinates[0]+=this.speed;
+        else if(this.direction === 1)
+            this.cordinates[1]-=this.speed;
+        else if(this.direction === 3)
+            this.cordinates[1]+=this.speed;};
+    return obj;
 }
