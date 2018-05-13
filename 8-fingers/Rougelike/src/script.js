@@ -54,13 +54,13 @@ function drawBackground()// draws background layer should only be called during 
 {
     //for(let i =0;i<20;i++)
         //for(let q =0;q<20;q++)
-    bgSurface.drawImage(backgroundImage,31,31,81,93,110,110,81*4,93*4);
+    bgSurface.drawImage(backgroundImage,31,31,81,93,110,110,81*3,93*3);
 }
 
 function drawMain() //draws all enemies player and interactive objects
 {
     fgSurface.clearRect(0,0,600,600);
-    fgSurface.drawImage(backgroundImage,195,160,15,20,character.cordinates[0],character.cordinates[1],15*4,20*4);
+    fgSurface.drawImage(backgroundImage,195,160,15,20,character.cordinates[0],character.cordinates[1],15*3,20*3);
     for (let i=0;i<character.bullets.length;i++)
         fgSurface.drawImage(backgroundImage,190,130,10,10,character.bullets[i].cordinates[0],character.bullets[i].cordinates[1],
             character.bullets[i].cordinates[2],character.bullets[i].cordinates[3]);
@@ -71,10 +71,10 @@ function drawUI() // draws UI ontop of everything else
 {
     uiSurface.clearRect(0,600,600,700);
     uiSurface.font = "10px Courier New";
-    uiSurface.fillText(character.cordinates[0].toString(), 50, 610);
-    uiSurface.fillText(character.cordinates[1].toString(), 50, 630);
-    uiSurface.fillText(character.state.toString(), 100, 610);
-    uiSurface.fillText(character.attackChargeTimer.toString(), 100, 630);
+    uiSurface.fillText("x: "+character.cordinates[0].toString(), 50, 610);
+    uiSurface.fillText("y: "+character.cordinates[1].toString(), 50, 630);
+    uiSurface.fillText("state: "+character.state.toString(), 100, 610);
+    uiSurface.fillText("attack cooldown: "+character.attackChargeTimer.toString(), 100, 630);
 }
 
 
@@ -212,4 +212,45 @@ function newBullet()
         else if(this.direction === 3)
             this.cordinates[1]+=this.speed;};
     return obj;
+}
+
+function enemyType1(x,y,level)
+{
+    let obj ={};
+    obj.cordinates = [x,y,10,10];
+    obj.level = 1;
+    obj.health = level+2;
+    obj.damage = Math.floor(level/2+1);
+    obj.ai = function ()//called once per frame to decide on what enemy should do
+    {
+
+    };
+    return(obj);
+}
+
+function enemyType2(x,y,level)
+{
+    let obj ={};
+    obj.cordinates = [x,y,10,10];
+    obj.level = 1;
+    obj.health = level+2;
+    obj.damage = Math.floor(level/2+1);
+    obj.ai = function ()//called once per frame to decide on what enemy should do
+    {
+
+    };
+    return(obj);
+}
+
+function enemyType3(x,y,level)
+{
+    let obj ={};
+    obj.cordinates = [x,y,10,10];
+    obj.health = level+2;
+    obj.damage = Math.floor(level/2+1);
+    obj.ai = function ()//called once per frame to decide on what enemy should do
+    {
+
+    };
+    return(obj);
 }
