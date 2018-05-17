@@ -26,14 +26,14 @@ document.addEventListener("keydown",keyDownHandler,false);
 document.addEventListener("keyup",keyUpHandler,false);
 
 let character = createCharacter();//creates and holds character
-let enemies = []; //array of all currently active enemies
-let miscObjects = []; // other interactive objects
-let tileList = [];
-setTilelist();
+let enemies = []; //array of all currently active enemies , to be held in room objects
+let miscObjects = []; // other interactive objects , to be held in room objects
+
+let tileList = [];//list of tiles and their locations and atributes
+setTileList();//populates the list with hardcoded tile information
+
 let floorMap = generateFloorMap(0);
 connectRooms();
-
-floorMap.rooms[1].features.push(returnTile(300,300,10));
 
 window.onload = function(){
     drawBackground();
@@ -88,8 +88,8 @@ function drawUI() // draws UI ontop of everything else currently showing debug i
 {
     uiSurface.clearRect(0,0,600,100);
     uiSurface.font = "10px Courier New";
-    uiSurface.fillText("x: "+Math.floor(character.coordinates[0].toString()), 50, 10);
-    uiSurface.fillText("y: "+Math.floor(character.coordinates[1].toString()), 50, 30);
+    uiSurface.fillText("x: "+Math.floor(character.coordinates[0]).toString(), 50, 10);
+    uiSurface.fillText("y: "+Math.floor(character.coordinates[1]).toString(), 50, 30);
     uiSurface.fillText("angle: "+character.bulletAngle.toString(), 100, 10);
     uiSurface.fillText("attack cooldown: "+character.attackChargeTimer.toString(), 100, 30);
     uiSurface.fillText("Room: "+character.roomLocation.toString(), 240, 60);
@@ -123,7 +123,7 @@ function gameLogic() //updates all game functions and ai
     }
     if (character.attackChargeTimer > 0)//recharging attack timer
         character.attackChargeTimer--;
-    if(character.baseVector[0] != 0 || character.baseVector[1]!= 0) //applies character movment to bullet firing direction unless char is not moving
+    if(character.baseVector[0] !== 0 || character.baseVector[1]!== 0) //applies character movment to bullet firing direction unless char is not moving
     {
         character.move(); //uses character vector to move it
         character.bulletAngle = character.angleFacing;
@@ -337,7 +337,7 @@ function tileInfo(x,y,w,h,passable)
     return obj;
 }
 
-function setTilelist()
+function setTileList()
 {
     //tile contains x on spritesheet, y on spritesheet, width on spitesheet, height on spritesheet, collision type 0 for collision 1 for passable 2 for doors
     tileList.push(tileInfo(0,0,10,10,0)); //tile 0 blackspace with collision
@@ -399,9 +399,9 @@ function collisionSystem()
         if(tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable !== 1)
            if(roughCollision(x1,y1,w1,h1,temp.features[i].x, temp.features[i].y,tileList[temp.features[i].tileNum].w*3, tileList[temp.features[i].tileNum].h*3))
            {
-               if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable == 0)
+               if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 0)
                    fineCollision(x1,y1,w1,h1,temp.features[i].x, temp.features[i].y,tileList[temp.features[i].tileNum].w*3, tileList[temp.features[i].tileNum].h*3);
-               if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable == 2)
+               if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 2)
                    i =swapRooms(i);
            }
     }
@@ -431,14 +431,14 @@ function fineCollision(x1,y1,w1,h1,x2,y2,w2,h2)//will use penetration testing to
 
 function swapRooms(i)
 {
-    if(floorMap.rooms[character.roomLocation].features[i].side == 2)
-        character.coordinates = [0, 265];
-    else if(floorMap.rooms[character.roomLocation].features[i].side == 0)
-        character.coordinates = [550,265];
-    else if(floorMap.rooms[character.roomLocation].features[i].side == 1)
-        character.coordinates = [277,535];
-    else if(floorMap.rooms[character.roomLocation].features[i].side == 3)
-        character.coordinates = [275,-15];
+    if(floorMap.rooms[character.roomLocation].features[i].side === 2)
+        character.coordinates[0] = 0;
+    else if(floorMap.rooms[character.roomLocation].features[i].side === 0)
+        character.coordinates[0] = 550;
+    else if(floorMap.rooms[character.roomLocation].features[i].side === 1)
+        character.coordinates[1] = 535;
+    else if(floorMap.rooms[character.roomLocation].features[i].side === 3)
+        character.coordinates[1]= -15;
     character.roomLocation = floorMap.rooms[character.roomLocation].features[i].room;
     drawBackground();
     return(floorMap.rooms[character.roomLocation].features.length);
@@ -446,73 +446,47 @@ function swapRooms(i)
 
 function addDoorLeft(room,connection)
 {
-    for(let i =0;i<floorMap.rooms[room].features.length;i++)
-    {
-        if(roughCollision(floorMap.rooms[room].features[i].x,floorMap.rooms[room].features[i].y,
-            tileList[floorMap.rooms[room].features[i].tileNum].w*3,
-            tileList[floorMap.rooms[room].features[i].tileNum].h*3,
-            0,270,20,60))
-        {
-            floorMap.rooms[room].features.splice(i,1);
-            i--;
-        }
-    }
+    removeTiles(0,270,20,60,room);
     floorMap.rooms[room].features.push(returnTile(0,270,13));
     floorMap.rooms[room].features.push(returnTile(0,315,15));
     floorMap.rooms[room].features.push(returnDoor(-25,280,18,connection,0));
 }
 function addDoorRight(room,connection)
 {
-    for(let i =0;i<floorMap.rooms[room].features.length;i++)
-    {
-        if(roughCollision(floorMap.rooms[room].features[i].x,floorMap.rooms[room].features[i].y,
-            tileList[floorMap.rooms[room].features[i].tileNum].w*3,
-            tileList[floorMap.rooms[room].features[i].tileNum].h*3,
-            570,270,20,60))
-        {
-            floorMap.rooms[room].features.splice(i,1);
-            i--;
-        }
-    }
+    removeTiles(570,270,20,60,room);
     floorMap.rooms[room].features.push(returnTile(550,270,13));
     floorMap.rooms[room].features.push(returnTile(570,315,15));
     floorMap.rooms[room].features.push(returnDoor(595,280,18,connection,2));
 }
 function addDoorTop(room,connection)
 {
-    for(let i =0;i<floorMap.rooms[room].features.length;i++)
-    {
-        if(roughCollision(floorMap.rooms[room].features[i].x,floorMap.rooms[room].features[i].y,
-            tileList[floorMap.rooms[room].features[i].tileNum].w*3,
-            tileList[floorMap.rooms[room].features[i].tileNum].h*3,
-            270,0,60,20))
-        {
-            floorMap.rooms[room].features.splice(i,1);
-            i--;
-        }
-    }
+    removeTiles(270,0,60,20,room);
     floorMap.rooms[room].features.push(returnTile(285,-10,14));
     floorMap.rooms[room].features.push(returnTile(270,0,16));
     floorMap.rooms[room].features.push(returnDoor(295,-25,18,connection,1));
 }
 function addDoorBottom(room,connection)
 {
-    for(let i =0;i<floorMap.rooms[room].features.length;i++)
-    {
-        if(roughCollision(floorMap.rooms[room].features[i].x,floorMap.rooms[room].features[i].y,
-            tileList[floorMap.rooms[room].features[i].tileNum].w*3,
-            tileList[floorMap.rooms[room].features[i].tileNum].h*3,
-            270,570,60,20))
-        {
-            floorMap.rooms[room].features.splice(i,1);
-            i--;
-        }
-    }
+    removeTiles(270,570,60,20,room);
     floorMap.rooms[room].features.push(returnTile(285,560,14));
     floorMap.rooms[room].features.push(returnTile(270,570,17));
     floorMap.rooms[room].features.push(returnDoor(295,595,18,connection,3));
 }
 
+function removeTiles(x,y,w,h,room)//removes tiles intersecting with specified zone
+{
+    for(let i =0;i<floorMap.rooms[room].features.length;i++)
+    {
+        if(roughCollision(floorMap.rooms[room].features[i].x,floorMap.rooms[room].features[i].y,
+            tileList[floorMap.rooms[room].features[i].tileNum].w*3,
+            tileList[floorMap.rooms[room].features[i].tileNum].h*3,
+            x,y,w,h))
+        {
+            floorMap.rooms[room].features.splice(i,1);
+            i--;
+        }
+    }
+}
 function connectRooms()
 {
     addDoorLeft(0, 1); //door in room, connecting to room
