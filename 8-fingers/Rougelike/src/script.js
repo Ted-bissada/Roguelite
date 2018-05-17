@@ -230,7 +230,7 @@ function createCharacter() //generates and contains game character
     let obj = {};
     obj.coordinates = [300,300]; //player characters coordinates stored as x,y pair and player movement vector
     obj.baseVector = [0,0];//what directions the player is traveling only uses 1 0 and -1
-    obj.hitbox= [20,10,30,30]; //offset from coordinates and then w and h of hitbox
+    obj.hitbox= [10,20,30,35]; //offset from coordinates and then w and h of hitbox
     obj.angleFacing = 0; //angle character is facing
     obj.bulletAngle = 0;  //last direction facing used for bullets
     obj.bullets = []; //bullets in the air
@@ -365,7 +365,7 @@ function showHitboxes()  //dev tool to be removed in final
 {
     fgSurface.beginPath();
     fgSurface.strokeStyle="red";
-    fgSurface.rect(character.coordinates[0]+character.hitbox[1], character.coordinates[1]+character.hitbox[0], character.hitbox[2], character.hitbox[3]);
+    fgSurface.rect(character.coordinates[0]+character.hitbox[0], character.coordinates[1]+character.hitbox[1], character.hitbox[2], character.hitbox[3]);
     fgSurface.stroke();
     fgSurface.closePath();
     for (let i= 0;i<floorMap.rooms[character.roomLocation].features.length;i++)
@@ -388,8 +388,8 @@ function showHitboxes()  //dev tool to be removed in final
 function collisionSystem()
 {
     let x1,y1,w1,h1,temp;
-    x1 = character.coordinates[0]+character.hitbox[1];
-    y1 = character.coordinates[1]+character.hitbox[0];
+    x1 = character.coordinates[0]+character.hitbox[0];
+    y1 = character.coordinates[1]+character.hitbox[1];
     w1 = character.hitbox[2];
     h1 = character.hitbox[3];
     temp = floorMap.rooms[character.roomLocation];
@@ -436,7 +436,7 @@ function swapRooms(i)
     else if(floorMap.rooms[character.roomLocation].features[i].side == 0)
         character.coordinates = [550,265];
     else if(floorMap.rooms[character.roomLocation].features[i].side == 1)
-        character.coordinates = [275,545];
+        character.coordinates = [277,535];
     else if(floorMap.rooms[character.roomLocation].features[i].side == 3)
         character.coordinates = [275,-15];
     character.roomLocation = floorMap.rooms[character.roomLocation].features[i].room;
