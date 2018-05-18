@@ -26,8 +26,6 @@ document.addEventListener("keydown",keyDownHandler,false);
 document.addEventListener("keyup",keyUpHandler,false);
 
 let character = createCharacter();//creates and holds character
-let enemies = []; //array of all currently active enemies , to be held in room objects
-let miscObjects = []; // other interactive objects , to be held in room objects
 
 let tileList = [];//list of tiles and their locations and atributes
 setTileList();//populates the list with hardcoded tile information
@@ -64,14 +62,14 @@ function drawBackground()// draws background layer should only be called during 
     {
         let temp = floorMap.rooms[character.roomLocation].features[i];
         bgSurface.drawImage(backgroundImage,tileList[temp.tileNum].x,tileList[temp.tileNum].y,tileList[temp.tileNum].w,tileList[temp.tileNum].h,
-            temp.x,temp.y,tileList[temp.tileNum].w*3,tileList[temp.tileNum].h*3);
+            temp.x,temp.y,tileList[temp.tileNum].w*2,tileList[temp.tileNum].h*2);
     }
 }
 
 function drawMain() //draws all enemies player and interactive objects
 {
     fgSurface.clearRect(0,0,600,600); //clear game area
-    fgSurface.drawImage(backgroundImage,195,160,15,20,Math.floor(character.coordinates[0]),Math.floor(character.coordinates[1]),15*3,20*3); //character
+    fgSurface.drawImage(backgroundImage,195,160,15,20,Math.floor(character.coordinates[0]),Math.floor(character.coordinates[1]),15*2,20*2); //character
 
     //showHitboxes();
 
@@ -79,7 +77,7 @@ function drawMain() //draws all enemies player and interactive objects
     {
         let temp = character.bullets[i];
         fgSurface.drawImage(backgroundImage, temp.sprite[0], temp.sprite[1], temp.sprite[2], temp.sprite[3],
-            Math.floor(temp.coordinates[0]), Math.floor(temp.coordinates[1]), temp.sprite[2]*3, temp.sprite[3]*3);
+            Math.floor(temp.coordinates[0]), Math.floor(temp.coordinates[1]), temp.sprite[2]*2, temp.sprite[3]*2);
     }
 
 }
@@ -117,29 +115,19 @@ function gameLogic() //updates all game functions and ai
         character.bullets[i].move(); // moves bullets
         if (character.bullets[i].timeToLive() <= 0) //changes and returns time to live
         {
-            character.bullets.splice(i,1); //destroy expires bullets
-            i--; //moves back one plaec in the list
+            character.bullets.splice(i,1); //destroy expired bullets
+            i--; //moves back one place in the list
         }
     }
     if (character.attackChargeTimer > 0)//recharging attack timer
         character.attackChargeTimer--;
+    collisionSystem();
     if(character.baseVector[0] !== 0 || character.baseVector[1]!== 0) //applies character movment to bullet firing direction unless char is not moving
     {
         character.move(); //uses character vector to move it
         character.bulletAngle = character.angleFacing;
     }
     character.baseVector = [0,0]; //resets character movment vector
-    collisionSystem();
-}
-
-function killAllOnemies() //kills every enemy and object on screen used during screen transitions
-{
-
-}
-
-function spawnAllObjects() //takes the room data and spawns the appropriate enemies and objects used during screen transitions
-{
-
 }
 
 function generateFloorMap (floor) //generates and returns the floor map
@@ -148,48 +136,56 @@ function generateFloorMap (floor) //generates and returns the floor map
     obj.floor = floor;
     obj.rooms =[];
     //for(let i =0;i<((floor*2)+2);i++)
-    for(let i =0;i<5;i++)
-        obj.rooms.push(generateRoomMap(Math.floor((5 + floor) * Math.random())));
+    for(let i =0;i<4;i++)
+        obj.rooms.push(generateRoomMap());
     return obj;
 }
 
-function generateRoomMap (points) //called by floor map generator to generate each room
+function generateRoomMap () //called by floor map generator to generate each room
 {
+    let tempRand, tempX, tempY,tempCollision;
     let obj = [];
     obj.features = [];
-    obj.features.push(returnTile(30,30,1));
-    for (let i =0;i<16;i++)
-        obj.features.push(returnTile(60+(i*30),30,2));
-    for (let i =0;i<16;i++)
-        obj.features.push(returnTile(30,60+(i*30),3));
-    obj.features.push(returnTile(30,540,4));
-    for (let i =0;i<16;i++)
-        obj.features.push(returnTile(60+(i*30),540,5));
-    obj.features.push(returnTile(540,540,6));
-    for (let i =0;i<16;i++)
-        obj.features.push(returnTile(540,60+(i*30),7));
-    obj.features.push(returnTile(540,30,8));
-    for (let i =0;i<16;i++)
-        for (let q =0;q<16;q++)
-        obj.features.push(returnTile(60+(i*30),60+(q*30),9));
-    obj.features.push(returnTile(30,570,10));
-    for (let i =0;i<16;i++)
-        obj.features.push(returnTile(60+(i*30),570,11));
-    obj.features.push(returnTile(540,570,12));
-    for (let i =0;i<20;i++)
-        obj.features.push(returnTile(0,i*30,0));
-    for (let i =0;i<18;i++)
-        obj.features.push(returnTile(30+(i*30),0,0));
-    for (let i =0;i<20;i++)
-        obj.features.push(returnTile(570,i*30,0));
-
-    /*let temp;
-    for(let i=0;i<points;)
+    obj.features.push(returnTile(32,32,1)); // top left corner
+    obj.features.push(returnTile(512,32,8)); //top right corner
+    obj.features.push(returnTile(32,512,4)); //bottom left corner prt one
+    obj.features.push(returnTile(512,512,6));//bottom right corner prt one
+    obj.features.push(returnTile(32,544,10));//bottom left corner prt two
+    obj.features.push(returnTile(512,544,12));//bottom right corner prt two
+    for (let i =0;i<14;i++)
     {
-        temp = Math.floor(Math.random() * 100);
-        obj.features.push(generateFeatures(temp));
-        i+=(temp%4);
-    }*/
+        obj.features.push(returnTile(64 + (i * 32), 32, 2));//top wall
+        obj.features.push(returnTile(32, 64 + (i * 32), 3));//left wall
+        obj.features.push(returnTile(64 + (i * 32), 512, 5));//bottom wall prt one
+        obj.features.push(returnTile(512, 64 + (i * 32), 7));//right wall
+        obj.features.push(returnTile(64+ (i * 32),544,11)); //bottom wall prt two
+    }
+    for (let i =0;i<14;i++)
+        for (let q =0;q<14;q++)
+            obj.features.push(returnTile(64+(i*32),64+(q*32),9)); //ground tiles
+    for (let i =0;i<18;i++)
+    {
+        obj.features.push(returnTile(0,i*32,0)); //left wall collision
+        obj.features.push(returnTile(544,i*32,0)); //right wall
+    }
+    for (let i =0;i<16;i++)
+        obj.features.push(returnTile(32+(i*32),0,0)); //top wall
+    for (let i=0;i<12;i++)
+        obj.features.push(returnTile(45+Math.floor(450*Math.random()),45+Math.floor(450*Math.random()),19));
+    for (let i=0;i<50;i++)
+    {
+        tempRand = Math.floor(Math.random() * 8);
+        tempX = 68 + Math.floor(Math.random() * (440 - (tileList[tempRand + 20].w * 2)));
+        tempY = 68 + Math.floor(Math.random() * (440 - (tileList[tempRand + 20].h * 2)));
+        tempCollision = false;
+        for (let q = 0; q < obj.features.length; q++)
+            if (tileList[obj.features[q].tileNum].passable !== 1)
+                if (roughCollision(tempX - 20, tempY - 20, (tileList[tempRand + 20].w * 2) + 40, (tileList[tempRand + 20].h * 2) + 40,
+                    obj.features[q].x, obj.features[q].y, tileList[obj.features[q].tileNum].w * 2, tileList[obj.features[q].tileNum].h * 2))
+                    tempCollision = true;
+        if (tempCollision === false)
+            obj.features.push(returnTile(tempX, tempY, 20 + tempRand));
+    }
     return obj;
 }
 
@@ -230,7 +226,7 @@ function createCharacter() //generates and contains game character
     let obj = {};
     obj.coordinates = [300,300]; //player characters coordinates stored as x,y pair and player movement vector
     obj.baseVector = [0,0];//what directions the player is traveling only uses 1 0 and -1
-    obj.hitbox= [10,20,30,35]; //offset from coordinates and then w and h of hitbox
+    obj.hitbox= [4,14,26,26]; //offset from coordinates and then w and h of hitbox
     obj.angleFacing = 0; //angle character is facing
     obj.bulletAngle = 0;  //last direction facing used for bullets
     obj.bullets = []; //bullets in the air
@@ -238,7 +234,8 @@ function createCharacter() //generates and contains game character
     obj.roomLocation = 0;
     obj.currentWeapon = generateWeapon(1,60,3,2,20,0);//dmg, bullet time to live,bullet speed, max bullets, reload timer, special attribute
     obj.attackChargeTimer = 0; //keeps track of reload time for weapon
-    obj.speed= 2; //movement speed
+    obj.trueSpeed= 2; //movement speed
+    obj.speed= obj.trueSpeed; //movement speed
     obj.attack = function()
     {
         if (this.attackChargeTimer === 0 && this.bullets.length < this.currentWeapon.bullets)
@@ -252,6 +249,7 @@ function createCharacter() //generates and contains game character
         this.angleFacing = Math.atan2(this.baseVector[0], this.baseVector[1]);
         this.coordinates[0] += this.speed*Math.sin(this.angleFacing);
         this.coordinates[1] += this.speed*Math.cos(this.angleFacing);
+        this.speed = this.trueSpeed;
     };
     return (obj);
 }
@@ -340,25 +338,35 @@ function tileInfo(x,y,w,h,passable)
 function setTileList()
 {
     //tile contains x on spritesheet, y on spritesheet, width on spitesheet, height on spritesheet, collision type 0 for collision 1 for passable 2 for doors
-    tileList.push(tileInfo(0,0,10,10,0)); //tile 0 blackspace with collision
-    tileList.push(tileInfo(30,30,10,10,1)); //tile 1 top left corner
-    tileList.push(tileInfo(40,30,10,10,1)); //tile 2 top wall
-    tileList.push(tileInfo(30,40,10,10,1)); //tile 3 left wall
-    tileList.push(tileInfo(30,105,10,10,1)); //tile 4 bottom left corner top half
-    tileList.push(tileInfo(40,105,10,10,1)); //tile 5 bottom wall top half
-    tileList.push(tileInfo(105,105,10,10,1)); //tile 6 bottom right corner top half
-    tileList.push(tileInfo(105,40,10,10,1)); //tile 7 right wall
-    tileList.push(tileInfo(105,30,10,10,1)); //tile 8 top right corner
-    tileList.push(tileInfo(50,50,10,10,1)); //tile 9 middle
-    tileList.push(tileInfo(30,115,10,10,0)); //tile 10 bottom left corner bot half
-    tileList.push(tileInfo(40,115,10,10,0)); //tile 11 bottom wall bot half
-    tileList.push(tileInfo(105,115,10,10,0)); //tile 12 bottom right corner bot half
+    // 3 to slow movement
+    tileList.push(tileInfo(0,0,16,16,0)); //tile 0 blackspace with collision
+    tileList.push(tileInfo(32,32,16,16,1)); //tile 1 top left corner
+    tileList.push(tileInfo(48,32,16,16,1)); //tile 2 top wall
+    tileList.push(tileInfo(32,48,16,16,1)); //tile 3 left wall
+    tileList.push(tileInfo(32,96,16,16,1)); //tile 4 bottom left corner top half
+    tileList.push(tileInfo(48,96,16,16,1)); //tile 5 bottom wall top half
+    tileList.push(tileInfo(96,96,16,16,1)); //tile 6 bottom right corner top half
+    tileList.push(tileInfo(96,48,16,16,1)); //tile 7 right wall
+    tileList.push(tileInfo(96,32,16,16,1)); //tile 8 top right corner
+    tileList.push(tileInfo(50,50,16,16,1)); //tile 9 middle
+    tileList.push(tileInfo(32,112,16,16,0)); //tile 10 bottom left corner bot half
+    tileList.push(tileInfo(48,112,16,16,0)); //tile 11 bottom wall bot half
+    tileList.push(tileInfo(96,112,16,16,0)); //tile 12 bottom right corner bot half
     tileList.push(tileInfo(141,130,20,20,1)); //tile 13 bridge left-right
-    tileList.push(tileInfo(166,130,15,20,1)); //tile 14 bridge up-down
-    tileList.push(tileInfo(0,0,10,5,0)); //tile 15 blackspace with collision half height
-    tileList.push(tileInfo(0,0,5,10,0)); //tile 16 blackspace with collision half width
-    tileList.push(tileInfo(45,115,5,10,0)); //tile 17 bottom wall bot half, half width
-    tileList.push(tileInfo(0,0,10,10,2)); //tile 18 creates a door collision box
+    tileList.push(tileInfo(166,130,16,20,1)); //tile 14 bridge up-down
+    tileList.push(tileInfo(0,0,16,8,0)); //tile 15 blackspace with collision half height
+    tileList.push(tileInfo(0,0,8,16,0)); //tile 16 blackspace with collision half width
+    tileList.push(tileInfo(48,112,16,16,1)); //tile 17 non colliding version of bot wall prt 2
+    tileList.push(tileInfo(0,0,16,16,2)); //tile 18 creates a door collision box
+    tileList.push(tileInfo(74,49,16,16,1));//tile 19 flavor tile
+    tileList.push(tileInfo(162,104,18,24,0));//tile 20 crate
+    tileList.push(tileInfo(32,160,48,48,0));//tile 21 large block
+    tileList.push(tileInfo(236,32,48,48,3));//tile 22 large lake slows movement
+    tileList.push(tileInfo(288,85,16,29,3));//tile 23 small lake 1 slows movement
+    tileList.push(tileInfo(309,84,28,16,3));//tile 24 small lake 2 slows movement
+    tileList.push(tileInfo(309,84,28,16,3));//tile 25 small lake 2 slows movement
+    tileList.push(tileInfo(32,212,32,32,0));//tile 26 small block 1
+    tileList.push(tileInfo(140,160,16,48,0));//tile 27 small block 2
 }
 
 function showHitboxes()  //dev tool to be removed in final
@@ -375,11 +383,14 @@ function showHitboxes()  //dev tool to be removed in final
             fgSurface.strokeStyle="white";
         else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 2)
             fgSurface.strokeStyle="yellow";
+        else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 3)
+            fgSurface.strokeStyle="green";
         else
             fgSurface.strokeStyle="blue";
         fgSurface.rect(floorMap.rooms[character.roomLocation].features[i].x, floorMap.rooms[character.roomLocation].features[i].y,
-            tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].w*3, tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].h*3);
-        fgSurface.stroke();
+            tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].w*2, tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].h*2);
+        if(fgSurface.strokeStyle !== "white")
+            fgSurface.stroke();
         fgSurface.closePath();
         fgSurface.fillText(i.toString(), floorMap.rooms[character.roomLocation].features[i].x+5, floorMap.rooms[character.roomLocation].features[i].y+10);
     }
@@ -397,12 +408,14 @@ function collisionSystem()
     for (let i= 0;i<floorMap.rooms[character.roomLocation].features.length;i++)
     {
         if(tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable !== 1)
-           if(roughCollision(x1,y1,w1,h1,temp.features[i].x, temp.features[i].y,tileList[temp.features[i].tileNum].w*3, tileList[temp.features[i].tileNum].h*3))
+           if(roughCollision(x1,y1,w1,h1,temp.features[i].x, temp.features[i].y,tileList[temp.features[i].tileNum].w*2, tileList[temp.features[i].tileNum].h*2))
            {
                if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 0)
-                   fineCollision(x1,y1,w1,h1,temp.features[i].x, temp.features[i].y,tileList[temp.features[i].tileNum].w*3, tileList[temp.features[i].tileNum].h*3);
-               if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 2)
+                   fineCollision(x1,y1,w1,h1,temp.features[i].x, temp.features[i].y,tileList[temp.features[i].tileNum].w*2, tileList[temp.features[i].tileNum].h*2);
+               else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 2)
                    i =swapRooms(i);
+               else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 3)
+                   character.speed *=0.5;
            }
     }
 }
@@ -420,13 +433,13 @@ function fineCollision(x1,y1,w1,h1,x2,y2,w2,h2)//will use penetration testing to
     let r_collision = x2+w2-x1;
 
     if (t_collision < b_collision && t_collision < l_collision && t_collision < r_collision )
-        character.baseVector[1]-=character.speed;
+        character.baseVector[1]-=1;
     if (b_collision < t_collision && b_collision < l_collision && b_collision < r_collision)
-        character.baseVector[1]+=character.speed;
+        character.baseVector[1]+=1;
     if (l_collision < r_collision && l_collision < t_collision && l_collision < b_collision)
-        character.baseVector[0]-=character.speed;
+        character.baseVector[0]-=1;
     if (r_collision < l_collision && r_collision < t_collision && r_collision < b_collision )
-        character.baseVector[0]+=character.speed;
+        character.baseVector[0]+=1;
 }
 
 function swapRooms(i)
@@ -434,43 +447,46 @@ function swapRooms(i)
     if(floorMap.rooms[character.roomLocation].features[i].side === 2)
         character.coordinates[0] = 0;
     else if(floorMap.rooms[character.roomLocation].features[i].side === 0)
-        character.coordinates[0] = 550;
+        character.coordinates[0] = 545;
     else if(floorMap.rooms[character.roomLocation].features[i].side === 1)
         character.coordinates[1] = 535;
     else if(floorMap.rooms[character.roomLocation].features[i].side === 3)
         character.coordinates[1]= -15;
     character.roomLocation = floorMap.rooms[character.roomLocation].features[i].room;
     drawBackground();
+    character.bullets.splice(0,character.bullets.length);
     return(floorMap.rooms[character.roomLocation].features.length);
 }
 
 function addDoorLeft(room,connection)
 {
-    removeTiles(0,270,20,60,room);
-    floorMap.rooms[room].features.push(returnTile(0,270,13));
-    floorMap.rooms[room].features.push(returnTile(0,315,15));
-    floorMap.rooms[room].features.push(returnDoor(-25,280,18,connection,0));
+    removeTiles(1,262,20,40,room);
+    floorMap.rooms[room].features.push(returnTile(0,258,13));
+    floorMap.rooms[room].features.push(returnTile(0,295,15));
+    floorMap.rooms[room].features.push(returnDoor(-31,258,18,connection,0));
 }
 function addDoorRight(room,connection)
 {
-    removeTiles(570,270,20,60,room);
-    floorMap.rooms[room].features.push(returnTile(550,270,13));
-    floorMap.rooms[room].features.push(returnTile(570,315,15));
-    floorMap.rooms[room].features.push(returnDoor(595,280,18,connection,2));
+    removeTiles(572,262,20,40,room);
+    floorMap.rooms[room].features.push(returnTile(540,258,13));
+    floorMap.rooms[room].features.push(returnTile(544,298,15));
+    floorMap.rooms[room].features.push(returnDoor(575,258,18,connection,2));
 }
 function addDoorTop(room,connection)
 {
-    removeTiles(270,0,60,20,room);
-    floorMap.rooms[room].features.push(returnTile(285,-10,14));
-    floorMap.rooms[room].features.push(returnTile(270,0,16));
-    floorMap.rooms[room].features.push(returnDoor(295,-25,18,connection,1));
+    removeTiles(262,0,40,20,room);
+    floorMap.rooms[room].features.push(returnTile(256,0,16));
+    floorMap.rooms[room].features.push(returnTile(280,-5,14));
+    floorMap.rooms[room].features.push(returnDoor(280,-31,18,connection,1));
 }
 function addDoorBottom(room,connection)
 {
-    removeTiles(270,570,60,20,room);
-    floorMap.rooms[room].features.push(returnTile(285,560,14));
-    floorMap.rooms[room].features.push(returnTile(270,570,17));
-    floorMap.rooms[room].features.push(returnDoor(295,595,18,connection,3));
+    removeTiles(262,570,40,20,room);
+    floorMap.rooms[room].features.push(returnTile(256,544,16));
+    floorMap.rooms[room].features.push(returnTile(256,544,17));
+    floorMap.rooms[room].features.push(returnTile(288,544,17));
+    floorMap.rooms[room].features.push(returnTile(280,540,14));
+    floorMap.rooms[room].features.push(returnDoor(280,575,18,connection,3));
 }
 
 function removeTiles(x,y,w,h,room)//removes tiles intersecting with specified zone
@@ -478,8 +494,8 @@ function removeTiles(x,y,w,h,room)//removes tiles intersecting with specified zo
     for(let i =0;i<floorMap.rooms[room].features.length;i++)
     {
         if(roughCollision(floorMap.rooms[room].features[i].x,floorMap.rooms[room].features[i].y,
-            tileList[floorMap.rooms[room].features[i].tileNum].w*3,
-            tileList[floorMap.rooms[room].features[i].tileNum].h*3,
+            tileList[floorMap.rooms[room].features[i].tileNum].w*2,
+            tileList[floorMap.rooms[room].features[i].tileNum].h*2,
             x,y,w,h))
         {
             floorMap.rooms[room].features.splice(i,1);
@@ -487,6 +503,7 @@ function removeTiles(x,y,w,h,room)//removes tiles intersecting with specified zo
         }
     }
 }
+
 function connectRooms()
 {
     addDoorLeft(0, 1); //door in room, connecting to room

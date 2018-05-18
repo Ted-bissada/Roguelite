@@ -1,6 +1,6 @@
 #subtitle
 {
-    width: 600px;
+    width: 576px;
     text-align: center;
     color:darkolivegreen;
     font-size: 15px;
@@ -8,15 +8,15 @@
 }
 #main
 {
-    height: 700px;
-    width: 600px;
+    height: 676px;
+    width: 576px;
     background-color: black;
     position: relative;
     border: 5px solid slategray;
 }
 h1
 {
-    width: 600px;
+    width: 576px;
     text-align: center;
     color: cadetblue;
 }
@@ -35,7 +35,7 @@ h1
 
 #ui
 {
-    top: 600px;
+    top: 576px;
     position: absolute;
     background-color: transparent;
 }
