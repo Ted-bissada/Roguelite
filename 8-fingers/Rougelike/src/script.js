@@ -8,7 +8,6 @@ let bgCanvas = document.getElementById("bg");//getting canvas
 let bgSurface = bgCanvas.getContext("2d");//setting canvas for drawing
 bgSurface.imageSmoothingEnabled = false;
 
-
 let uiCanvas = document.getElementById("ui");//getting canvas
 let uiSurface = uiCanvas.getContext("2d");//setting canvas for drawing
 uiSurface.imageSmoothingEnabled = false;
@@ -20,25 +19,32 @@ uiSurface.fillStyle = 'white';//text colour for text used on canvas
 let backgroundImage = new Image();//loading a spite sheet i downloaded
 backgroundImage.src = "data/dungeon_tiles.png";
 
+let explosionImage = new Image();//loading a spite sheet i downloaded
+explosionImage.src = "data/explosion.png";
+
 let keysPressed = [];//an array that holds the keys currently down
 
 document.addEventListener("keydown",keyDownHandler,false);
 document.addEventListener("keyup",keyUpHandler,false);
 
-let character = createCharacter();//creates and holds character
+let stairRoom = 0;
 
+let character = createCharacter();//creates and holds character
+let explosions = [];
 let tileList = [];//list of tiles and their locations and atributes
 setTileList();//populates the list with hardcoded tile information
 
 let floorMap = generateFloorMap(0);
 connectRooms();
 
-window.onload = function(){
+showHitBox = false; //dev tool on/off
+showMap = true; //dev tool on/off
+
+window.onload = function() //this prevents game from starting before all assets are loaded
+{
     drawBackground();
     requestAnimationFrame(gameLoop); //calls game loop 60 times a second
 };
-
-
 
 function gameLoop()
 {
@@ -53,7 +59,6 @@ function render() //clears screen and draws all elements in turn
     drawMain();
     drawUI();
 }
-
 
 function drawBackground()// draws background layer should only be called during screen transitions
 {
@@ -70,16 +75,37 @@ function drawMain() //draws all enemies player and interactive objects
 {
     fgSurface.clearRect(0,0,600,600); //clear game area
     fgSurface.drawImage(backgroundImage,195,160,15,20,Math.floor(character.coordinates[0]),Math.floor(character.coordinates[1]),15*2,20*2); //character
-
-    //showHitboxes();
-
+    if(showHitBox)
+        showHitboxes();
     for (let i=0;i<character.bullets.length;i++) //draws bullets
-    {
-        let temp = character.bullets[i];
-        fgSurface.drawImage(backgroundImage, temp.sprite[0], temp.sprite[1], temp.sprite[2], temp.sprite[3],
-            Math.floor(temp.coordinates[0]), Math.floor(temp.coordinates[1]), temp.sprite[2]*2, temp.sprite[3]*2);
-    }
+        character.bullets[i].draw()
+    for (let i =0;i<explosions.length;i++)
+        explosions[i].draw()
+    if(showMap)
+        drawMap();
+}
 
+function drawMap()
+{
+    fgSurface.strokeStyle = "red";
+    fgSurface.fillStyle = "red";
+    for(let i =0;i<floorMap.map.length;i++)
+    {
+        fgSurface.fillStyle = "red";
+        fgSurface.beginPath();
+        if(floorMap.map[i][2] === character.roomLocation)
+            fgSurface.fillRect(300-(floorMap.map[i][0]*15),300-(floorMap.map[i][1]*15),15,15);
+        else if(floorMap.map[i][2] === stairRoom)
+        {
+            fgSurface.fillStyle = "yellow";
+            fgSurface.fillRect(300 - (floorMap.map[i][0] * 15), 300 - (floorMap.map[i][1] * 15), 15, 15);
+        }
+        fgSurface.rect(300-(floorMap.map[i][0]*15),300-(floorMap.map[i][1]*15),15,15);
+        fgSurface.stroke();
+        fgSurface.closePath();
+        fgSurface.fillStyle = "white";
+        fgSurface.fillText(floorMap.map[i][2],302-(floorMap.map[i][0]*15),310-(floorMap.map[i][1]*15));
+    }
 }
 
 function drawUI() // draws UI ontop of everything else currently showing debug info
@@ -88,9 +114,14 @@ function drawUI() // draws UI ontop of everything else currently showing debug i
     uiSurface.font = "10px Courier New";
     uiSurface.fillText("x: "+Math.floor(character.coordinates[0]).toString(), 50, 10);
     uiSurface.fillText("y: "+Math.floor(character.coordinates[1]).toString(), 50, 30);
-    uiSurface.fillText("angle: "+character.bulletAngle.toString(), 100, 10);
-    uiSurface.fillText("attack cooldown: "+character.attackChargeTimer.toString(), 100, 30);
-    uiSurface.fillText("Room: "+character.roomLocation.toString(), 240, 60);
+    uiSurface.fillText("angle: "+(character.bulletAngle.toFixed(3)).toString(), 100, 10);
+    uiSurface.fillText("attack cd: "+character.attackChargeTimer.toString(), 100, 30);
+    uiSurface.fillText("Room: "+character.roomLocation.toString(), 200, 10);
+    uiSurface.fillText("# of Rooms: "+floorMap.rooms.length.toString(), 310, 10);
+    uiSurface.fillText("# of Rooms placed: "+floorMap.map.length.toString(), 310, 30);
+    uiSurface.fillText("Last Placed room: "+floorMap.map[floorMap.map.length-1][2].toString(), 400, 10);
+    uiSurface.fillText("current floor "+floorMap.floor.toString(), 450, 30);
+
 }
 
 
@@ -110,24 +141,15 @@ function userInputHandler() //accepts and applies player input
 
 function gameLogic() //updates all game functions and ai
 {
-    for (let i=0;i<character.bullets.length;i++) //itererates through bullet list
-    {
-        character.bullets[i].move(); // moves bullets
-        if (character.bullets[i].timeToLive() <= 0) //changes and returns time to live
-        {
-            character.bullets.splice(i,1); //destroy expired bullets
-            i--; //moves back one place in the list
-        }
-    }
-    if (character.attackChargeTimer > 0)//recharging attack timer
-        character.attackChargeTimer--;
+    for (let i =0;i<explosions.length;i++) //ticks all explosions
+        if(explosions[i].tick())
+            i--;
+    for (let i=0;i<character.bullets.length;i++) //ticks all bullets
+        if(character.bullets[i].tick())
+            i--;
+    //collisionSystem();
+    character.tick(); //ticks character
     collisionSystem();
-    if(character.baseVector[0] !== 0 || character.baseVector[1]!== 0) //applies character movment to bullet firing direction unless char is not moving
-    {
-        character.move(); //uses character vector to move it
-        character.bulletAngle = character.angleFacing;
-    }
-    character.baseVector = [0,0]; //resets character movment vector
 }
 
 function generateFloorMap (floor) //generates and returns the floor map
@@ -135,8 +157,8 @@ function generateFloorMap (floor) //generates and returns the floor map
     let obj = [];
     obj.floor = floor;
     obj.rooms =[];
-    //for(let i =0;i<((floor*2)+2);i++)
-    for(let i =0;i<4;i++)
+    obj.map = [];
+    for(let i =0;i<((floor*3)+4);i++)
         obj.rooms.push(generateRoomMap());
     return obj;
 }
@@ -189,7 +211,6 @@ function generateRoomMap () //called by floor map generator to generate each roo
     return obj;
 }
 
-
 function returnTile(x,y,tileNum)
 {
     let obj = {};
@@ -207,6 +228,32 @@ function returnDoor(x,y,tileNum,room,side)
     obj.tileNum = tileNum;
     obj.room = room;
     obj.side = side;
+    return obj;
+}
+
+function newExplosion(x,y)
+{
+    let obj = {};
+    obj.coordinates = [x,y];
+    obj.frame = 0;
+    obj.ticks = 0;
+    obj.tick = function ()
+    {
+        this.ticks++;
+        if(this.ticks % 3 === 0)
+            this.frame++;
+        if(this.ticks>30)
+        {
+            explosions.splice(explosions.indexOf(this), 1);
+            return (true);
+        }
+        else
+            return (false);
+    };
+    obj.draw = function ()
+    {
+        fgSurface.drawImage(explosionImage,this.frame*32,0,32,32,Math.floor(this.coordinates[0]),Math.floor(this.coordinates[1]),32,32);
+    };
     return obj;
 }
 
@@ -244,12 +291,20 @@ function createCharacter() //generates and contains game character
             this.attackChargeTimer = this.currentWeapon.reload;
         }
     };
-    obj.move = function ()
+    obj.tick = function ()
     {
+        if (this.attackChargeTimer > 0)//recharging attack timer
+            this.attackChargeTimer--;
         this.angleFacing = Math.atan2(this.baseVector[0], this.baseVector[1]);
-        this.coordinates[0] += this.speed*Math.sin(this.angleFacing);
-        this.coordinates[1] += this.speed*Math.cos(this.angleFacing);
+        if(this.baseVector[0] !== 0 || this.baseVector[1]!== 0)//applies character movment to bullet firing direction unless char is not moving
+        {
+            this.coordinates[0] += this.speed*Math.sin(this.angleFacing);
+            this.coordinates[1] += this.speed*Math.cos(this.angleFacing);
+            this.bulletAngle = this.angleFacing;
+        }
         this.speed = this.trueSpeed;
+        this.baseVector = [0,0]; //resets character movment vector
+
     };
     return (obj);
 }
@@ -270,26 +325,40 @@ function newBullet()
 {
     let obj = {};
     obj.speed = character.currentWeapon.speed;
+    obj.damage = character.currentWeapon.dmg;
     obj.coordinates = [character.coordinates[0],character.coordinates[1]];
     obj.angle = character.bulletAngle;
     obj.sprite = [190,130,10,10]; //sprite location on spritesheet
     obj.lifetime = character.currentWeapon.range;//time to live for this bullet
-    obj.timeToLive = function(){this.lifetime--;return(this.lifetime)};
-    obj.move = function ()
+    obj.tick = function()
     {
         this.coordinates[0] += this.speed*Math.sin(this.angle);
         this.coordinates[1] += this.speed*Math.cos(this.angle);
+        this.lifetime--;
+        if (this.lifetime < 0)
+        {
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
+            character.bullets.splice(character.bullets.indexOf(this), 1);
+            return (true);
+        }
+        else
+            return (false);
+    };
+    obj.draw = function()
+    {
+        fgSurface.drawImage(backgroundImage, this.sprite[0], this.sprite[1], this.sprite[2], this.sprite[3],
+            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*2, this.sprite[3]*2);
     };
     return obj;
 }
 
-function enemyType1(x,y,level)
+function enemyType1(x,y,direction) //enemy bullet
 {
     let obj ={};
     obj.coordinates = [x,y];
-    obj.level = 1;
-    obj.health = level+2;
-    obj.damage = Math.floor((level/2)+1);
+    obj.direction = direction;
+    obj.health = 2;
+    obj.damage = 1;
     obj.ai = function ()//called once per frame to decide on what enemy should do
     {
 
@@ -301,7 +370,6 @@ function enemyType2(x,y,level)
 {
     let obj ={};
     obj.coordinates = [x,y];
-    obj.level = 1;
     obj.health = level*2;
     obj.damage = Math.floor(level);
     obj.ai = function ()//called once per frame to decide on what enemy should do
@@ -337,8 +405,8 @@ function tileInfo(x,y,w,h,passable)
 
 function setTileList()
 {
-    //tile contains x on spritesheet, y on spritesheet, width on spitesheet, height on spritesheet, collision type 0 for collision 1 for passable 2 for doors
-    // 3 to slow movement
+    //tile contains x on sprite sheet, y on sprite sheet, width on spite sheet, height on sprite sheet,
+    //collision type 0 for collision, 1 for passable, 2 for doors, 3 to slow movement,4 for collision of character and bullets, 5 for stairs to next floor
     tileList.push(tileInfo(0,0,16,16,0)); //tile 0 blackspace with collision
     tileList.push(tileInfo(32,32,16,16,1)); //tile 1 top left corner
     tileList.push(tileInfo(48,32,16,16,1)); //tile 2 top wall
@@ -359,14 +427,15 @@ function setTileList()
     tileList.push(tileInfo(48,112,16,16,1)); //tile 17 non colliding version of bot wall prt 2
     tileList.push(tileInfo(0,0,16,16,2)); //tile 18 creates a door collision box
     tileList.push(tileInfo(74,49,16,16,1));//tile 19 flavor tile
-    tileList.push(tileInfo(162,104,18,24,0));//tile 20 crate
-    tileList.push(tileInfo(32,160,48,48,0));//tile 21 large block
+    tileList.push(tileInfo(162,104,18,24,4));//tile 20 crate
+    tileList.push(tileInfo(32,160,48,48,4));//tile 21 large block
     tileList.push(tileInfo(236,32,48,48,3));//tile 22 large lake slows movement
     tileList.push(tileInfo(288,85,16,29,3));//tile 23 small lake 1 slows movement
     tileList.push(tileInfo(309,84,28,16,3));//tile 24 small lake 2 slows movement
     tileList.push(tileInfo(309,84,28,16,3));//tile 25 small lake 2 slows movement
-    tileList.push(tileInfo(32,212,32,32,0));//tile 26 small block 1
-    tileList.push(tileInfo(140,160,16,48,0));//tile 27 small block 2
+    tileList.push(tileInfo(32,212,32,32,4));//tile 26 small block 1
+    tileList.push(tileInfo(140,160,16,48,4));//tile 27 small block 2
+    tileList.push(tileInfo(210,103,19,20,5));//tile 28 stairs
 }
 
 function showHitboxes()  //dev tool to be removed in final
@@ -381,7 +450,7 @@ function showHitboxes()  //dev tool to be removed in final
         fgSurface.beginPath();
         if(tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 1)
             fgSurface.strokeStyle="white";
-        else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 2)
+        else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 2 || tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 5)
             fgSurface.strokeStyle="yellow";
         else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 3)
             fgSurface.strokeStyle="green";
@@ -410,12 +479,14 @@ function collisionSystem()
         if(tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable !== 1)
            if(roughCollision(x1,y1,w1,h1,temp.features[i].x, temp.features[i].y,tileList[temp.features[i].tileNum].w*2, tileList[temp.features[i].tileNum].h*2))
            {
-               if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 0)
+               if (tileList[temp.features[i].tileNum].passable === 0 || tileList[temp.features[i].tileNum].passable === 4)
                    fineCollision(x1,y1,w1,h1,temp.features[i].x, temp.features[i].y,tileList[temp.features[i].tileNum].w*2, tileList[temp.features[i].tileNum].h*2);
-               else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 2)
+               else if (tileList[temp.features[i].tileNum].passable === 2)
                    i =swapRooms(i);
-               else if (tileList[floorMap.rooms[character.roomLocation].features[i].tileNum].passable === 3)
+               else if (tileList[temp.features[i].tileNum].passable === 3)
                    character.speed *=0.5;
+               else if (tileList[temp.features[i].tileNum].passable === 5)
+                   i = newFloor();
            }
     }
 }
@@ -455,6 +526,16 @@ function swapRooms(i)
     character.roomLocation = floorMap.rooms[character.roomLocation].features[i].room;
     drawBackground();
     character.bullets.splice(0,character.bullets.length);
+    return(floorMap.rooms[character.roomLocation].features.length);
+}
+
+function newFloor()
+{
+    character.roomLocation = 0;
+    character.coordinates = [300,300];
+    floorMap = generateFloorMap(floorMap.floor+1);
+    connectRooms();
+    drawBackground();
     return(floorMap.rooms[character.roomLocation].features.length);
 }
 
@@ -506,10 +587,67 @@ function removeTiles(x,y,w,h,room)//removes tiles intersecting with specified zo
 
 function connectRooms()
 {
-    addDoorLeft(0, 1); //door in room, connecting to room
-    addDoorRight(1, 0);
-    addDoorTop(0, 2);
-    addDoorBottom(2, 0);
-    addDoorTop(2, 3);
-    addDoorBottom(3, 2);
+    let current = [0,0];
+    let move = 0;
+    let valid = true;
+    for(let i = 0;i<floorMap.rooms.length;i++) //places rooms randomly if they are valid
+    {
+        move = Math.floor(Math.random() * 4); //picks a random side of the current room to place a room on
+        if(move === 0)
+            current[0]++;
+        else if(move === 1)
+            current[0]--;
+        else if(move === 2)
+            current[1]++;
+        else if(move === 3)
+            current[1]--;
+        for (let q = 0;q<floorMap.map.length;q++) //checks if placment is valid
+            if(floorMap.map[q][0] === current[0] && floorMap.map[q][1] === current[1])
+                valid = false;
+        if(valid === true) //places room, if valid if not room is ignored
+            floorMap.map.push([current[0],current[1],i]);
+        valid = true;
+    }
+    for(let i =0;i<floorMap.map.length;i++) //connects all rooms as defined on generated map
+    {
+        for (let q = 0; q < floorMap.map.length; q++) {
+            if (floorMap.map[i][0] === floorMap.map[q][0] && floorMap.map[i][1] === floorMap.map[q][1] + 1)
+                addDoorBottom(floorMap.map[i][2], floorMap.map[q][2]);
+            if (floorMap.map[i][0] === floorMap.map[q][0] && floorMap.map[i][1] === floorMap.map[q][1] - 1)
+                addDoorTop(floorMap.map[i][2], floorMap.map[q][2]);
+            if (floorMap.map[i][1] === floorMap.map[q][1] && floorMap.map[i][0] === floorMap.map[q][0] + 1)
+                addDoorRight(floorMap.map[i][2], floorMap.map[q][2]);
+            if (floorMap.map[i][1] === floorMap.map[q][1] && floorMap.map[i][0] === floorMap.map[q][0] - 1)
+                addDoorLeft(floorMap.map[i][2], floorMap.map[q][2]);
+        }
+    }
+    placeStairs(floorMap.map[floorMap.map.length-1][2]); //places stairs, first attemps last room placed 15 times if fails randomly selects rooms and repeats
+}
+
+function placeStairs(room)
+{
+    let tempX;
+    let tempY;
+    let placed = false;
+    let attemps = 15; //remaining attempts till a new room is selected
+    while(!placed && attemps > 0)
+    {
+        placed = true;
+        tempX = 68 + Math.floor(Math.random() * (440 - (tileList[28].w * 2)));
+        tempY = 68 + Math.floor(Math.random() * (440 - (tileList[28].h * 2)));
+        for (let q = 0; q < floorMap.rooms[room].features.length; q++)
+            if (tileList[floorMap.rooms[room].features[q].tileNum].passable !== 1)
+                if (roughCollision(tempX - 20, tempY - 20, (tileList[28].w * 2) + 40, (tileList[28].h * 2) + 40,
+                    floorMap.rooms[room].features[q].x, floorMap.rooms[room].features[q].y,
+                    tileList[floorMap.rooms[room].features[q].tileNum].w * 2, tileList[floorMap.rooms[room].features[q].tileNum].h * 2))
+                    placed = false;
+        attemps--;
+    }
+    if(attemps > 0)
+    {
+        floorMap.rooms[room].features.push(returnTile(tempX, tempY, 28));
+        stairRoom = room;
+    }
+    else
+        placeStairs(floorMap.map[Math.floor(Math.random()*(floorMap.map.length-1))][2]);//ensuring stairs are placed somewhere on the map
 }

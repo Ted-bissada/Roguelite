@@ -8,7 +8,7 @@
 }
 #main
 {
-    height: 676px;
+    height: 576px;
     width: 576px;
     background-color: black;
     position: relative;
@@ -35,7 +35,7 @@ h1
 
 #ui
 {
-    top: 576px;
+    top: 0px;
     position: absolute;
     background-color: transparent;
 }
