@@ -27,8 +27,6 @@ let keysPressed = [];//an array that holds the keys currently down
 document.addEventListener("keydown",keyDownHandler,false);
 document.addEventListener("keyup",keyUpHandler,false);
 
-let stairRoom = 0;
-
 let character = createCharacter();//creates and holds character
 let explosions = [];
 let tileList = [];//list of tiles and their locations and atributes
@@ -37,6 +35,7 @@ setTileList();//populates the list with hardcoded tile information
 let floorMap = generateFloorMap(0);
 connectRooms();
 
+let gameOver = false;
 showHitBox = false; //dev tool on/off
 showMap = true; //dev tool on/off
 
@@ -49,7 +48,8 @@ window.onload = function() //this prevents game from starting before all assets 
 function gameLoop()
 {
     render();
-    userInputHandler();
+    if (!gameOver)
+        userInputHandler();
     gameLogic();
     requestAnimationFrame(gameLoop);
 }
@@ -74,13 +74,16 @@ function drawBackground()// draws background layer should only be called during 
 function drawMain() //draws all enemies player and interactive objects
 {
     fgSurface.clearRect(0,0,600,600); //clear game area
-    fgSurface.drawImage(backgroundImage,195,160,15,20,Math.floor(character.coordinates[0]),Math.floor(character.coordinates[1]),15*2,20*2); //character
+    fgSurface.drawImage(backgroundImage,character.sprite[0],character.sprite[1],character.sprite[2],character.sprite[3],
+        Math.floor(character.coordinates[0]),Math.floor(character.coordinates[1]),character.sprite[2]*2,character.sprite[3]*2); //character
     if(showHitBox)
         showHitboxes();
     for (let i=0;i<character.bullets.length;i++) //draws bullets
         character.bullets[i].draw()
     for (let i =0;i<explosions.length;i++)
         explosions[i].draw()
+    for (let i =0;i<floorMap.rooms[character.roomLocation].enemies.length;i++)
+        floorMap.rooms[character.roomLocation].enemies[i].draw();
     if(showMap)
         drawMap();
 }
@@ -95,7 +98,7 @@ function drawMap()
         fgSurface.beginPath();
         if(floorMap.map[i][2] === character.roomLocation)
             fgSurface.fillRect(300-(floorMap.map[i][0]*15),300-(floorMap.map[i][1]*15),15,15);
-        else if(floorMap.map[i][2] === stairRoom)
+        else if(floorMap.map[i][2] === floorMap.stairRoom)
         {
             fgSurface.fillStyle = "yellow";
             fgSurface.fillRect(300 - (floorMap.map[i][0] * 15), 300 - (floorMap.map[i][1] * 15), 15, 15);
@@ -117,13 +120,13 @@ function drawUI() // draws UI ontop of everything else currently showing debug i
     uiSurface.fillText("angle: "+(character.bulletAngle.toFixed(3)).toString(), 100, 10);
     uiSurface.fillText("attack cd: "+character.attackChargeTimer.toString(), 100, 30);
     uiSurface.fillText("Room: "+character.roomLocation.toString(), 200, 10);
+    uiSurface.fillText("Health: "+character.health.toString(), 200, 30);
     uiSurface.fillText("# of Rooms: "+floorMap.rooms.length.toString(), 310, 10);
     uiSurface.fillText("# of Rooms placed: "+floorMap.map.length.toString(), 310, 30);
     uiSurface.fillText("Last Placed room: "+floorMap.map[floorMap.map.length-1][2].toString(), 400, 10);
     uiSurface.fillText("current floor "+floorMap.floor.toString(), 450, 30);
 
 }
-
 
 function userInputHandler() //accepts and applies player input
 {
@@ -147,7 +150,10 @@ function gameLogic() //updates all game functions and ai
     for (let i=0;i<character.bullets.length;i++) //ticks all bullets
         if(character.bullets[i].tick())
             i--;
-    //collisionSystem();
+
+    for (let i=0;i<floorMap.rooms[character.roomLocation].enemies.length;i++) //ticks all bullets
+        if(floorMap.rooms[character.roomLocation].enemies[i].tick())
+            i--;
     character.tick(); //ticks character
     collisionSystem();
 }
@@ -158,6 +164,7 @@ function generateFloorMap (floor) //generates and returns the floor map
     obj.floor = floor;
     obj.rooms =[];
     obj.map = [];
+    obj.stairRoom = 0;
     for(let i =0;i<((floor*3)+4);i++)
         obj.rooms.push(generateRoomMap());
     return obj;
@@ -168,6 +175,7 @@ function generateRoomMap () //called by floor map generator to generate each roo
     let tempRand, tempX, tempY,tempCollision;
     let obj = [];
     obj.features = [];
+    obj.enemies = [];
     obj.features.push(returnTile(32,32,1)); // top left corner
     obj.features.push(returnTile(512,32,8)); //top right corner
     obj.features.push(returnTile(32,512,4)); //bottom left corner prt one
@@ -208,6 +216,13 @@ function generateRoomMap () //called by floor map generator to generate each roo
         if (tempCollision === false)
             obj.features.push(returnTile(tempX, tempY, 20 + tempRand));
     }
+
+    obj.enemies.push(enemyType1(100,100));
+    obj.enemies.push(enemyType1(100,120));
+    obj.enemies.push(enemyType1(100,140));
+    obj.enemies.push(enemyType1(100,160));
+    obj.enemies.push(enemyType1(100,180));
+
     return obj;
 }
 
@@ -277,7 +292,9 @@ function createCharacter() //generates and contains game character
     obj.angleFacing = 0; //angle character is facing
     obj.bulletAngle = 0;  //last direction facing used for bullets
     obj.bullets = []; //bullets in the air
-    obj.health = 5; // health
+    obj.maxHealth = 50;
+    obj.health = 50; // health
+    obj.sprite = [195,160,15,20,];
     obj.roomLocation = 0;
     obj.currentWeapon = generateWeapon(1,60,3,2,20,0);//dmg, bullet time to live,bullet speed, max bullets, reload timer, special attribute
     obj.attackChargeTimer = 0; //keeps track of reload time for weapon
@@ -304,7 +321,11 @@ function createCharacter() //generates and contains game character
         }
         this.speed = this.trueSpeed;
         this.baseVector = [0,0]; //resets character movment vector
-
+        if(this.health<1)
+        {
+            gameOver = true;
+            this.sprite = [0, 0, 0, 0];
+        }
     };
     return (obj);
 }
@@ -312,7 +333,7 @@ function createCharacter() //generates and contains game character
 function generateWeapon(dmg,range,speed,bullets,reload,special)
 {
     let obj = {};
-    obj.dmg = dmg;
+    obj.damage = dmg;
     obj.range = range;
     obj.speed = speed;
     obj.bullets = bullets;
@@ -324,17 +345,26 @@ function generateWeapon(dmg,range,speed,bullets,reload,special)
 function newBullet()
 {
     let obj = {};
-    obj.speed = character.currentWeapon.speed;
-    obj.damage = character.currentWeapon.dmg;
+    obj.damage = character.currentWeapon.damage;
     obj.coordinates = [character.coordinates[0],character.coordinates[1]];
-    obj.angle = character.bulletAngle;
+    obj.vector = [character.currentWeapon.speed*Math.sin(character.bulletAngle),character.currentWeapon.speed*Math.cos(character.bulletAngle)];
     obj.sprite = [190,130,10,10]; //sprite location on spritesheet
     obj.lifetime = character.currentWeapon.range;//time to live for this bullet
     obj.tick = function()
     {
-        this.coordinates[0] += this.speed*Math.sin(this.angle);
-        this.coordinates[1] += this.speed*Math.cos(this.angle);
+        this.coordinates[0] += this.vector[0];
+        this.coordinates[1] += this.vector[1];
         this.lifetime--;
+        for(let i = 0;i<floorMap.rooms[character.roomLocation].enemies.length;i++)
+            if(roughCollision(this.coordinates[0],this.coordinates[1], this.sprite[2]*2, this.sprite[3]*2,
+                floorMap.rooms[character.roomLocation].enemies[i].coordinates[0],floorMap.rooms[character.roomLocation].enemies[i].coordinates[1],
+                floorMap.rooms[character.roomLocation].enemies[i].sprite[2]*2,floorMap.rooms[character.roomLocation].enemies[i].sprite[3]*2))
+            {
+                explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
+                floorMap.rooms[character.roomLocation].enemies[i].health -= this.damage;
+                character.bullets.splice(character.bullets.indexOf(this), 1);
+                return (true);
+            }
         if (this.lifetime < 0)
         {
             explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
@@ -352,16 +382,41 @@ function newBullet()
     return obj;
 }
 
-function enemyType1(x,y,direction) //enemy bullet
+function enemyType1(x,y) //enemy bullet
 {
     let obj ={};
     obj.coordinates = [x,y];
-    obj.direction = direction;
-    obj.health = 2;
+    obj.angle;
+    obj.health = 1;
     obj.damage = 1;
-    obj.ai = function ()//called once per frame to decide on what enemy should do
+    obj.sprite = [2,2,16,8];
+    obj.tick = function ()//called once per frame to decide on what enemy should do
     {
-
+        this.angle = Math.atan2(character.coordinates[0] - this.coordinates[0],character.coordinates[1]- this.coordinates[1]);
+        this.coordinates[0] += 1.5*Math.sin(this.angle);
+        this.coordinates[1] += 1.5*Math.cos(this.angle);
+        if(this.health < 1)
+        {
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
+            floorMap.rooms[character.roomLocation].enemies.splice(floorMap.rooms[character.roomLocation].enemies.indexOf(this), 1);
+            return (true);
+        }
+        if(roughCollision(character.coordinates[0]+character.hitbox[0],
+            character.coordinates[1]+character.hitbox[1], character.hitbox[2],character.hitbox[3],
+            this.coordinates[0],this.coordinates[1],this.sprite[2]*2,this.sprite[3]*2))
+        {
+            character.health -= this.damage;
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
+            floorMap.rooms[character.roomLocation].enemies.splice(floorMap.rooms[character.roomLocation].enemies.indexOf(this), 1);
+            return (true);
+        }
+        else
+            return (false);
+    };
+    obj.draw = function()
+    {
+        fgSurface.drawImage(backgroundImage, this.sprite[0], this.sprite[1], this.sprite[2], this.sprite[3],
+            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*2, this.sprite[3]*2);
     };
     return(obj);
 }
@@ -372,7 +427,7 @@ function enemyType2(x,y,level)
     obj.coordinates = [x,y];
     obj.health = level*2;
     obj.damage = Math.floor(level);
-    obj.ai = function ()//called once per frame to decide on what enemy should do
+    obj.tick = function ()//called once per frame to decide on what enemy should do
     {
 
     };
@@ -385,7 +440,7 @@ function enemyType3(x,y,level)
     obj.coordinates = [x,y,10,10];
     obj.health = level+2;
     obj.damage = Math.floor(2+(level*1.5));
-    obj.ai = function ()//called once per frame to decide on what enemy should do
+    obj.tick = function ()//called once per frame to decide on what enemy should do
     {
 
     };
@@ -405,9 +460,7 @@ function tileInfo(x,y,w,h,passable)
 
 function setTileList()
 {
-    //tile contains x on sprite sheet, y on sprite sheet, width on spite sheet, height on sprite sheet,
-    //collision type 0 for collision, 1 for passable, 2 for doors, 3 to slow movement,4 for collision of character and bullets, 5 for stairs to next floor
-    tileList.push(tileInfo(0,0,16,16,0)); //tile 0 blackspace with collision
+    tileList.push(tileInfo(32,0,16,16,0)); //tile 0 blackspace with collision
     tileList.push(tileInfo(32,32,16,16,1)); //tile 1 top left corner
     tileList.push(tileInfo(48,32,16,16,1)); //tile 2 top wall
     tileList.push(tileInfo(32,48,16,16,1)); //tile 3 left wall
@@ -422,8 +475,8 @@ function setTileList()
     tileList.push(tileInfo(96,112,16,16,0)); //tile 12 bottom right corner bot half
     tileList.push(tileInfo(141,130,20,20,1)); //tile 13 bridge left-right
     tileList.push(tileInfo(166,130,16,20,1)); //tile 14 bridge up-down
-    tileList.push(tileInfo(0,0,16,8,0)); //tile 15 blackspace with collision half height
-    tileList.push(tileInfo(0,0,8,16,0)); //tile 16 blackspace with collision half width
+    tileList.push(tileInfo(32,0,16,8,0)); //tile 15 blackspace with collision half height
+    tileList.push(tileInfo(32,0,8,16,0)); //tile 16 blackspace with collision half width
     tileList.push(tileInfo(48,112,16,16,1)); //tile 17 non colliding version of bot wall prt 2
     tileList.push(tileInfo(0,0,16,16,2)); //tile 18 creates a door collision box
     tileList.push(tileInfo(74,49,16,16,1));//tile 19 flavor tile
@@ -435,7 +488,7 @@ function setTileList()
     tileList.push(tileInfo(309,84,28,16,3));//tile 25 small lake 2 slows movement
     tileList.push(tileInfo(32,212,32,32,4));//tile 26 small block 1
     tileList.push(tileInfo(140,160,16,48,4));//tile 27 small block 2
-    tileList.push(tileInfo(210,103,19,20,5));//tile 28 stairs
+    tileList.push(tileInfo(210,105,20,21,5));//tile 28 stairs
 }
 
 function showHitboxes()  //dev tool to be removed in final
@@ -646,7 +699,7 @@ function placeStairs(room)
     if(attemps > 0)
     {
         floorMap.rooms[room].features.push(returnTile(tempX, tempY, 28));
-        stairRoom = room;
+        floorMap.stairRoom = room;
     }
     else
         placeStairs(floorMap.map[Math.floor(Math.random()*(floorMap.map.length-1))][2]);//ensuring stairs are placed somewhere on the map
