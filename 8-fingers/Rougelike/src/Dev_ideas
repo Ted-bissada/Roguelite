@@ -1,4 +1,4 @@
-The bat should rotate around a randomly selected poin at a random radius that changes every second, instead of divebombing player
+The bat should rotate around a randomly selected point at a random radius that changes every second, instead of divebombing player - Done
 
 Each stair-room should have a boss that if deafeated upgrades one of a
 players movement speed max 5?,
@@ -10,9 +10,9 @@ number of bullets fired in a spread per shot max 5?
 
 enemies should gain stats, hp and damage and some movement speed per dungon level
 
-health pickus should be implimented as enemies that cannot move and are placed leagally by player rules and give -damage on pickup
+health pickups should be implemented as enemies that cannot move and are placed legally by player rules and give -damage on hit
 
-traps that fire fireballs at set interavalls in set directions cannot die
+traps that fire fireballs at set intervals in set directions cannot die
 
 slime that moves at 90 deg angles when he encounters a wall should be pushed back his speed and pick a random direction
 

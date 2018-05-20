@@ -151,7 +151,7 @@ function gameLogic() //updates all game functions and ai
         if(character.bullets[i].tick())
             i--;
 
-    for (let i=0;i<floorMap.rooms[character.roomLocation].enemies.length;i++) //ticks all bullets
+    for (let i=0;i<floorMap.rooms[character.roomLocation].enemies.length;i++) //ticks all enemies
         if(floorMap.rooms[character.roomLocation].enemies[i].tick())
             i--;
     character.tick(); //ticks character
@@ -166,7 +166,7 @@ function generateFloorMap (floor) //generates and returns the floor map
     obj.map = [];
     obj.stairRoom = 0;
     for(let i =0;i<((floor*3)+4);i++)
-        obj.rooms.push(generateRoomMap(Math.floor(Math.random()*(floor*2+3))));
+        obj.rooms.push(generateRoomMap());
     return obj;
 }
 
@@ -216,10 +216,6 @@ function generateRoomMap () //called by floor map generator to generate each roo
         if (tempCollision === false)
             obj.features.push(returnTile(tempX, tempY, 20 + tempRand));
     }
-
-    obj.enemies.push(enemyType1(500,500));
-    obj.enemies.push(enemyType2(100,100));
-
     return obj;
 }
 
@@ -380,20 +376,41 @@ function newBullet()
     return obj;
 }
 
-function enemyType1(x,y) //enemy bullet
+function enemyType1() //enemy bullet
 {
     let obj ={};
-    obj.coordinates = [x,y];
-    obj.angle;
-    obj.speed = 1.5;
+    obj.coordinates = [(Math.floor(Math.random()*400)+70),(Math.floor(Math.random()*400)+70)];
+    obj.orbitLocation;
+    obj.targetLocation ; //the target point for travel
+    obj.radius; //radius of circling
+    obj.rotationAngle ; //angle on the circle around character
+    obj.movementAngle; //angle of current movement
+    obj.speed = 2;
     obj.health = 1;
     obj.damage = 1;
     obj.sprite = [2,2,16,8];
+    obj.timer = 0;
+    obj.animationTimer = 0;
     obj.tick = function ()//called once per frame to decide on what enemy should do
     {
-        this.angle = Math.atan2(character.coordinates[0] - this.coordinates[0],character.coordinates[1]- this.coordinates[1]);
-        this.coordinates[0] += this.speed*Math.sin(this.angle);
-        this.coordinates[1] += this.speed*Math.cos(this.angle);
+        this.timer--;
+        if(this.timer<0)
+        {
+            this.timer = Math.floor(Math.random()*300)+100;
+            this.radius = Math.floor(Math.random()*100)+50;
+            this.orbitLocation = [(Math.floor(Math.random()*400)+70),(Math.floor(Math.random()*400)+70)];
+        }
+        this.rotationAngle = Math.atan2(this.coordinates[0]-this.orbitLocation[0],this.coordinates[1]-this.orbitLocation[1])-0.4;
+        this.targetLocation = [(this.orbitLocation[0] + this.radius * Math.sin(this.rotationAngle)), (this.orbitLocation[1] + this.radius * Math.cos(this.rotationAngle))];
+
+        this.animationTimer += 0.1;
+        this.targetLocation[0] += Math.cos(this.animationTimer)*40;
+        this.targetLocation[1] += Math.sin(this.animationTimer)*40;
+
+
+        this.movementAngle = Math.atan2(this.targetLocation[0] - this.coordinates[0],this.targetLocation[1]- this.coordinates[1]);
+        this.coordinates[0] += this.speed*Math.sin(this.movementAngle);
+        this.coordinates[1] += this.speed*Math.cos(this.movementAngle);
         if(this.health < 1)
         {
             explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],1));
@@ -420,11 +437,11 @@ function enemyType1(x,y) //enemy bullet
     return(obj);
 }
 
-function enemyType2(x,y)
+function enemyType2()
 {
     let obj ={};
-    obj.coordinates = [x,y];
-    obj.targetLocation = [0,0];
+    obj.coordinates = [(Math.floor(Math.random()*400)+70),(Math.floor(Math.random()*400)+70)];
+    obj.targetLocation;
     obj.speed = 2;
     obj.rotationAngle ; //angle on the circle around character
     obj.movementAngle; //angle of current movement
@@ -732,6 +749,14 @@ function connectRooms()
         }
     }
     placeStairs(floorMap.map[floorMap.map.length-1][2]); //places stairs, first attemps last room placed 15 times if fails randomly selects rooms and repeats
+
+    for(let i =1; i < floorMap.map.length; i++)
+    {
+        if(floorMap.map[i][2] !== floorMap.stairRoom)
+        {
+            addEnemies(i)
+        }
+    }
 }
 
 function placeStairs(room)
@@ -759,5 +784,26 @@ function placeStairs(room)
         floorMap.stairRoom = room;
     }
     else
-        placeStairs(floorMap.map[Math.floor(Math.random()*(floorMap.map.length-1))][2]);//ensuring stairs are placed somewhere on the map
+        placeStairs(floorMap.map[Math.floor(1+Math.random()*(floorMap.map.length-2))][2]);//ensuring stairs are placed somewhere on the map
+}
+
+function addEnemies(room)
+{
+    let points = Math.floor(Math.random()*floorMap.floor*2)+2;
+    let random;
+    while(points > 0)
+    {
+        random = Math.floor(Math.random()*100)
+        if(random <50)
+        {
+            for(let i=0;i<3;i++)
+                floorMap.rooms[room].enemies.push(enemyType1());
+            points--;
+        }
+        else if(random < 75)
+        {
+            floorMap.rooms[room].enemies.push(enemyType2());
+            points--;
+        }
+    }
 }
