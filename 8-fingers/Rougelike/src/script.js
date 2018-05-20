@@ -166,7 +166,7 @@ function generateFloorMap (floor) //generates and returns the floor map
     obj.map = [];
     obj.stairRoom = 0;
     for(let i =0;i<((floor*3)+4);i++)
-        obj.rooms.push(generateRoomMap());
+        obj.rooms.push(generateRoomMap(Math.floor(Math.random()*(floor*2+3))));
     return obj;
 }
 
@@ -217,11 +217,8 @@ function generateRoomMap () //called by floor map generator to generate each roo
             obj.features.push(returnTile(tempX, tempY, 20 + tempRand));
     }
 
-    obj.enemies.push(enemyType1(100,100));
-    obj.enemies.push(enemyType1(100,120));
-    obj.enemies.push(enemyType1(100,140));
-    obj.enemies.push(enemyType1(100,160));
-    obj.enemies.push(enemyType1(100,180));
+    obj.enemies.push(enemyType1(500,500));
+    obj.enemies.push(enemyType2(100,100));
 
     return obj;
 }
@@ -246,12 +243,13 @@ function returnDoor(x,y,tileNum,room,side)
     return obj;
 }
 
-function newExplosion(x,y)
+function newExplosion(x,y,type)
 {
     let obj = {};
     obj.coordinates = [x,y];
     obj.frame = 0;
     obj.ticks = 0;
+    obj.type = type;
     obj.tick = function ()
     {
         this.ticks++;
@@ -267,7 +265,7 @@ function newExplosion(x,y)
     };
     obj.draw = function ()
     {
-        fgSurface.drawImage(explosionImage,this.frame*32,0,32,32,Math.floor(this.coordinates[0]),Math.floor(this.coordinates[1]),32,32);
+        fgSurface.drawImage(explosionImage,this.frame*32,type*32,32,32,Math.floor(this.coordinates[0]),Math.floor(this.coordinates[1]),32,32);
     };
     return obj;
 }
@@ -360,14 +358,14 @@ function newBullet()
                 floorMap.rooms[character.roomLocation].enemies[i].coordinates[0],floorMap.rooms[character.roomLocation].enemies[i].coordinates[1],
                 floorMap.rooms[character.roomLocation].enemies[i].sprite[2]*2,floorMap.rooms[character.roomLocation].enemies[i].sprite[3]*2))
             {
-                explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
+                explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],0));
                 floorMap.rooms[character.roomLocation].enemies[i].health -= this.damage;
                 character.bullets.splice(character.bullets.indexOf(this), 1);
                 return (true);
             }
         if (this.lifetime < 0)
         {
-            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],0));
             character.bullets.splice(character.bullets.indexOf(this), 1);
             return (true);
         }
@@ -387,26 +385,27 @@ function enemyType1(x,y) //enemy bullet
     let obj ={};
     obj.coordinates = [x,y];
     obj.angle;
+    obj.speed = 1.5;
     obj.health = 1;
     obj.damage = 1;
     obj.sprite = [2,2,16,8];
     obj.tick = function ()//called once per frame to decide on what enemy should do
     {
         this.angle = Math.atan2(character.coordinates[0] - this.coordinates[0],character.coordinates[1]- this.coordinates[1]);
-        this.coordinates[0] += 1.5*Math.sin(this.angle);
-        this.coordinates[1] += 1.5*Math.cos(this.angle);
+        this.coordinates[0] += this.speed*Math.sin(this.angle);
+        this.coordinates[1] += this.speed*Math.cos(this.angle);
         if(this.health < 1)
         {
-            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],1));
             floorMap.rooms[character.roomLocation].enemies.splice(floorMap.rooms[character.roomLocation].enemies.indexOf(this), 1);
             return (true);
         }
-        if(roughCollision(character.coordinates[0]+character.hitbox[0],
+        else if(roughCollision(character.coordinates[0]+character.hitbox[0],
             character.coordinates[1]+character.hitbox[1], character.hitbox[2],character.hitbox[3],
             this.coordinates[0],this.coordinates[1],this.sprite[2]*2,this.sprite[3]*2))
         {
             character.health -= this.damage;
-            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1]));
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],1));
             floorMap.rooms[character.roomLocation].enemies.splice(floorMap.rooms[character.roomLocation].enemies.indexOf(this), 1);
             return (true);
         }
@@ -421,30 +420,88 @@ function enemyType1(x,y) //enemy bullet
     return(obj);
 }
 
-function enemyType2(x,y,level)
+function enemyType2(x,y)
 {
     let obj ={};
     obj.coordinates = [x,y];
-    obj.health = level*2;
-    obj.damage = Math.floor(level);
+    obj.targetLocation = [0,0];
+    obj.speed = 2;
+    obj.rotationAngle ; //angle on the circle around character
+    obj.movementAngle; //angle of current movement
+    obj.radius = 150;
+    obj.health = 2;
+    obj.sprite = [2,12,16,16];
+    obj.spawnTimer = 100;
     obj.tick = function ()//called once per frame to decide on what enemy should do
     {
-
+        this.spawnTimer--;
+        if(this.spawnTimer<0)
+        {
+            floorMap.rooms[character.roomLocation].enemies.push(enemyType3(this.coordinates[0],this.coordinates[1]));
+            this.spawnTimer = 100;
+        }
+        this.rotationAngle = Math.atan2(this.coordinates[0]-character.coordinates[0],this.coordinates[1]-character.coordinates[1])-0.4;
+        if(this.rotationAngle>Math.PI)
+            this.rotationAngle = -Math.PI;
+        this.targetLocation = [(character.coordinates[0] + this.radius * Math.sin(this.rotationAngle)), (character.coordinates[1] + this.radius * Math.cos(this.rotationAngle))];
+        this.movementAngle = Math.atan2(this.targetLocation[0] - this.coordinates[0],this.targetLocation[1]- this.coordinates[1]);
+        this.coordinates[0] += this.speed*Math.sin(this.movementAngle);
+        this.coordinates[1] += this.speed*Math.cos(this.movementAngle);
+        if(this.health < 1)
+        {
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],1));
+            floorMap.rooms[character.roomLocation].enemies.splice(floorMap.rooms[character.roomLocation].enemies.indexOf(this), 1);
+            return (true);
+        }
+        else
+            return (false);
+    };
+    obj.draw = function()
+    {
+        fgSurface.drawImage(backgroundImage, this.sprite[0], this.sprite[1], this.sprite[2], this.sprite[3],
+            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*2, this.sprite[3]*2);
     };
     return(obj);
 }
 
-function enemyType3(x,y,level)
+function enemyType3(x,y)
 {
     let obj ={};
-    obj.coordinates = [x,y,10,10];
-    obj.health = level+2;
-    obj.damage = Math.floor(2+(level*1.5));
+    obj.coordinates = [x,y];
+    obj.angle = Math.atan2(character.coordinates[0] - obj.coordinates[0],character.coordinates[1]- obj.coordinates[1]);
+    obj.speed = 3;
+    obj.health = 1;
+    obj.damage = 1;
+    obj.sprite = [2,40,16,16];
     obj.tick = function ()//called once per frame to decide on what enemy should do
     {
+        this.coordinates[0] += this.speed*Math.sin(this.angle);
+        this.coordinates[1] += this.speed*Math.cos(this.angle);
+        if(this.health < 1)
+        {
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],1));
+            floorMap.rooms[character.roomLocation].enemies.splice(floorMap.rooms[character.roomLocation].enemies.indexOf(this), 1);
+            return (true);
+        }
 
+        else if(roughCollision(character.coordinates[0]+character.hitbox[0],
+            character.coordinates[1]+character.hitbox[1], character.hitbox[2],character.hitbox[3],
+            this.coordinates[0],this.coordinates[1],this.sprite[2]*2,this.sprite[3]*2))
+        {
+            character.health -= this.damage;
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],1));
+            floorMap.rooms[character.roomLocation].enemies.splice(floorMap.rooms[character.roomLocation].enemies.indexOf(this), 1);
+            return (true);
+        }
+        else
+            return (false);
     };
-    return(obj);
+    obj.draw = function()
+    {
+        fgSurface.drawImage(backgroundImage, this.sprite[0], this.sprite[1], this.sprite[2], this.sprite[3],
+            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*2, this.sprite[3]*2);
+    };
+    return (obj);
 }
 
 function tileInfo(x,y,w,h,passable)
@@ -537,7 +594,7 @@ function collisionSystem()
                else if (tileList[temp.features[i].tileNum].passable === 2)
                    i =swapRooms(i);
                else if (tileList[temp.features[i].tileNum].passable === 3)
-                   character.speed *=0.5;
+                   character.speed *=0.6;
                else if (tileList[temp.features[i].tileNum].passable === 5)
                    i = newFloor();
            }

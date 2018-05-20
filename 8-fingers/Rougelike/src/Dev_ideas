@@ -1,0 +1,28 @@
+The bat should rotate around a randomly selected poin at a random radius that changes every second, instead of divebombing player
+
+Each stair-room should have a boss that if deafeated upgrades one of a
+players movement speed max 5?,
+weapon damage unlimited maximum?,
+weapon recharge time 7 frames minimum?,
+Number of bullets allowed no max needed,
+maximum hp no max needed,
+number of bullets fired in a spread per shot max 5?
+
+enemies should gain stats, hp and damage and some movement speed per dungon level
+
+health pickus should be implimented as enemies that cannot move and are placed leagally by player rules and give -damage on pickup
+
+traps that fire fireballs at set interavalls in set directions cannot die
+
+slime that moves at 90 deg angles when he encounters a wall should be pushed back his speed and pick a random direction
+
+
+boss ideas
+-bigger eyeball that fires mutiple fireballs at once, or he could spawn a regualr eyeball
+
+-giant slime that charges and destroys obstacles in path leaving a slowing trail behind him
+
+-necromancer teleports around and summons bats en mass
+
+
+i should split enemy and boss scripts off from main as they will ballon in size as fetures are added
