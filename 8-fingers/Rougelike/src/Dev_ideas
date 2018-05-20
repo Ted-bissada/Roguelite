@@ -1,28 +1,43 @@
 The bat should rotate around a randomly selected point at a random radius that changes every second, instead of divebombing player - Done
 
-Each stair-room should have a boss that if deafeated upgrades one of a
-players movement speed max 5?,
-weapon damage unlimited maximum?,
-weapon recharge time 7 frames minimum?,
-Number of bullets allowed no max needed,
-maximum hp no max needed,
-number of bullets fired in a spread per shot max 5?
+slime enemy that moves at 90 deg angles when he encounters an obstacle he turns 90 deg -medium would need to make enemies interact with fine collision system
+this was wrong i just need to use the rough collision system and when a slime makes contact it moves backwards* its speed then turns 90 deg downgraded to medium
 
-enemies should gain stats, hp and damage and some movement speed per dungon level
 
-health pickups should be implemented as enemies that cannot move and are placed legally by player rules and give -damage on hit
 
-traps that fire fireballs at set intervals in set directions cannot die
+Each stair-room should have a boss that if defeated upgrades the player -easy would work by directly altering player stats
+-players movement speed max 5?,
+-weapon damage unlimited maximum?,
+-weapon recharge time 7 frames minimum?,
+-Number of bullets allowed no max needed,
+-maximum hp no max needed,
+-number of bullets fired in a spread per shot max 5?
+system
+-if the player wants they can ignore the boss and go for the ladder -easy
+-the ladder does not appear until the boss is dead -medium
 
-slime that moves at 90 deg angles when he encounters a wall should be pushed back his speed and pick a random direction
 
+enemies should gain stats, hp and damage and some movement speed per dungeon level -easy
+
+health pickups should be implemented as enemies that cannot move and are placed legally by player rules and give negative damage on hit -medium
+i would need to check hp pack placment against all existing room objects
+
+traps that fire fireballs at set intervals in set directions cannot die -easy
+
+slime that moves at 90 deg angles when he encounters a wall should be pushed back his speed and pick a random direction -hard
 
 boss ideas
--bigger eyeball that fires mutiple fireballs at once, or he could spawn a regualr eyeball
+-bigger eyeball that fires mutiple fireballs at once, or he could spawn a regualr eyeball - Done spawns fireballs, necromancer taking over swarm boss role
 
--giant slime that charges and destroys obstacles in path leaving a slowing trail behind him
+-giant slime that charges and destroys obstacles in path leaving a slowing trail behind him -hard
 
--necromancer teleports around and summons bats en mass
+-necromancer teleports' around and summons bats en mass -easy
 
 
-i should split enemy and boss scripts off from main as they will ballon in size as fetures are added
+i should split enemy and boss scripts off from main as it will balloon in size as features are added -easy
+
+#IMPORTANT
+I should rework the controls the idea of shooting in the last direction traveled sounded good on paper but its shit for fighting things
+-leave as is and work game around it -easy but bad idea
+-implement mouse control for firing while movement moves to wasd -medium could work well
+-shift firing to wasd and keep movement on arrow keys for a semi twin-stick setup -hard needs more research

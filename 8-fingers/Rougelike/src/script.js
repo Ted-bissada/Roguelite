@@ -37,7 +37,7 @@ connectRooms();
 
 let gameOver = false;
 showHitBox = false; //dev tool on/off
-showMap = true; //dev tool on/off
+showMap = false; //dev tool on/off
 
 window.onload = function() //this prevents game from starting before all assets are loaded
 {
@@ -286,8 +286,8 @@ function createCharacter() //generates and contains game character
     obj.angleFacing = 0; //angle character is facing
     obj.bulletAngle = 0;  //last direction facing used for bullets
     obj.bullets = []; //bullets in the air
-    obj.maxHealth = 50;
-    obj.health = 50; // health
+    obj.maxHealth = 5;
+    obj.health = 5; // health
     obj.sprite = [195,160,15,20,];
     obj.roomLocation = 0;
     obj.currentWeapon = generateWeapon(1,60,3,2,20,0);//dmg, bullet time to live,bullet speed, max bullets, reload timer, special attribute
@@ -319,6 +319,7 @@ function createCharacter() //generates and contains game character
         {
             gameOver = true;
             this.sprite = [0, 0, 0, 0];
+            this.hitbox= [1000,1000,0,0]; //offset from coordinates and then w and h of hitbox
         }
     };
     return (obj);
@@ -342,7 +343,7 @@ function newBullet()
     obj.damage = character.currentWeapon.damage;
     obj.coordinates = [character.coordinates[0],character.coordinates[1]];
     obj.vector = [character.currentWeapon.speed*Math.sin(character.bulletAngle),character.currentWeapon.speed*Math.cos(character.bulletAngle)];
-    obj.sprite = [190,130,10,10]; //sprite location on spritesheet
+    obj.sprite = [192,131,7,10]; //sprite location on spritesheet
     obj.lifetime = character.currentWeapon.range;//time to live for this bullet
     obj.tick = function()
     {
@@ -352,7 +353,8 @@ function newBullet()
         for(let i = 0;i<floorMap.rooms[character.roomLocation].enemies.length;i++)
             if(roughCollision(this.coordinates[0],this.coordinates[1], this.sprite[2]*2, this.sprite[3]*2,
                 floorMap.rooms[character.roomLocation].enemies[i].coordinates[0],floorMap.rooms[character.roomLocation].enemies[i].coordinates[1],
-                floorMap.rooms[character.roomLocation].enemies[i].sprite[2]*2,floorMap.rooms[character.roomLocation].enemies[i].sprite[3]*2))
+                floorMap.rooms[character.roomLocation].enemies[i].sprite[2]*floorMap.rooms[character.roomLocation].enemies[i].scale,
+                floorMap.rooms[character.roomLocation].enemies[i].sprite[3]*floorMap.rooms[character.roomLocation].enemies[i].scale))
             {
                 explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],0));
                 floorMap.rooms[character.roomLocation].enemies[i].health -= this.damage;
@@ -386,6 +388,7 @@ function enemyType1() //enemy bullet
     obj.rotationAngle ; //angle on the circle around character
     obj.movementAngle; //angle of current movement
     obj.speed = 2;
+    obj.scale =2;
     obj.health = 1;
     obj.damage = 1;
     obj.sprite = [2,2,16,8];
@@ -432,7 +435,7 @@ function enemyType1() //enemy bullet
     obj.draw = function()
     {
         fgSurface.drawImage(backgroundImage, this.sprite[0], this.sprite[1], this.sprite[2], this.sprite[3],
-            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*2, this.sprite[3]*2);
+            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*this.scale, this.sprite[3]*this.scale);
     };
     return(obj);
 }
@@ -443,18 +446,19 @@ function enemyType2()
     obj.coordinates = [(Math.floor(Math.random()*400)+70),(Math.floor(Math.random()*400)+70)];
     obj.targetLocation;
     obj.speed = 2;
+    obj.scale =2;
     obj.rotationAngle ; //angle on the circle around character
     obj.movementAngle; //angle of current movement
     obj.radius = 150;
     obj.health = 2;
-    obj.sprite = [2,12,16,16];
+    obj.sprite = [2,13,14,14];
     obj.spawnTimer = 100;
     obj.tick = function ()//called once per frame to decide on what enemy should do
     {
         this.spawnTimer--;
         if(this.spawnTimer<0)
         {
-            floorMap.rooms[character.roomLocation].enemies.push(enemyType3(this.coordinates[0],this.coordinates[1]));
+            floorMap.rooms[character.roomLocation].enemies.push(enemyType3(this.coordinates[0],this.coordinates[1],Math.atan2(character.coordinates[0] - obj.coordinates[0],character.coordinates[1]- obj.coordinates[1])));
             this.spawnTimer = 100;
         }
         this.rotationAngle = Math.atan2(this.coordinates[0]-character.coordinates[0],this.coordinates[1]-character.coordinates[1])-0.4;
@@ -476,22 +480,27 @@ function enemyType2()
     obj.draw = function()
     {
         fgSurface.drawImage(backgroundImage, this.sprite[0], this.sprite[1], this.sprite[2], this.sprite[3],
-            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*2, this.sprite[3]*2);
+            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*this.scale, this.sprite[3]*this.scale);
     };
     return(obj);
 }
 
-function enemyType3(x,y)
+function enemyType3(x,y,angle)
 {
     let obj ={};
     obj.coordinates = [x,y];
-    obj.angle = Math.atan2(character.coordinates[0] - obj.coordinates[0],character.coordinates[1]- obj.coordinates[1]);
+    obj.angle = angle;
     obj.speed = 3;
+    obj.scale =2;
     obj.health = 1;
     obj.damage = 1;
-    obj.sprite = [2,40,16,16];
+    obj.sprite = [3,40,11,13];
+    obj.timeToLive = 100;
     obj.tick = function ()//called once per frame to decide on what enemy should do
     {
+        this.timeToLive--;
+        if(this.timeToLive < 0)
+            this.health = 0;
         this.coordinates[0] += this.speed*Math.sin(this.angle);
         this.coordinates[1] += this.speed*Math.cos(this.angle);
         if(this.health < 1)
@@ -516,7 +525,7 @@ function enemyType3(x,y)
     obj.draw = function()
     {
         fgSurface.drawImage(backgroundImage, this.sprite[0], this.sprite[1], this.sprite[2], this.sprite[3],
-            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*2, this.sprite[3]*2);
+            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*this.scale, this.sprite[3]*this.scale);
     };
     return (obj);
 }
@@ -590,6 +599,33 @@ function showHitboxes()  //dev tool to be removed in final
         fgSurface.closePath();
         fgSurface.fillText(i.toString(), floorMap.rooms[character.roomLocation].features[i].x+5, floorMap.rooms[character.roomLocation].features[i].y+10);
     }
+    fgSurface.beginPath();
+    fgSurface.strokeStyle="pink";
+    for (let i= 0;i<floorMap.rooms[character.roomLocation].enemies.length;i++)
+    {
+        fgSurface.rect(
+            Math.floor(floorMap.rooms[character.roomLocation].enemies[i].coordinates[0]),
+            Math.floor(floorMap.rooms[character.roomLocation].enemies[i].coordinates[1]),
+            Math.floor(floorMap.rooms[character.roomLocation].enemies[i].sprite[2]*floorMap.rooms[character.roomLocation].enemies[i].scale),
+            Math.floor(floorMap.rooms[character.roomLocation].enemies[i].sprite[3]*floorMap.rooms[character.roomLocation].enemies[i].scale));
+    }
+    fgSurface.stroke();
+    fgSurface.closePath();
+
+    fgSurface.beginPath();
+    fgSurface.strokeStyle="azure";
+    for (let i= 0;i<character.bullets.length;i++)
+    {
+        fgSurface.rect(
+            Math.floor(character.bullets[i].coordinates[0]),
+            Math.floor(character.bullets[i].coordinates[1]),
+            Math.floor(character.bullets[i].sprite[2]*2),
+            Math.floor(character.bullets[i].sprite[3]*2));
+    }
+    fgSurface.stroke();
+    fgSurface.closePath();
+
+
 }
 
 function collisionSystem()
@@ -753,9 +789,9 @@ function connectRooms()
     for(let i =1; i < floorMap.map.length; i++)
     {
         if(floorMap.map[i][2] !== floorMap.stairRoom)
-        {
-            addEnemies(i)
-        }
+            addEnemies(floorMap.map[i][2]);
+        else
+            floorMap.rooms[floorMap.map[i][2]].enemies.push(boss1());
     }
 }
 
@@ -806,4 +842,51 @@ function addEnemies(room)
             points--;
         }
     }
+}
+
+function boss1()
+{
+    let obj ={};
+    obj.coordinates = [280,280];
+    obj.targetLocation;
+    obj.speed = 1;
+    obj.rotationAngle ; //angle on the circle around character
+    obj.movementAngle; //angle of current movement
+    obj.radius = 200;
+    obj.health = 5;
+    obj.scale =4;
+    obj.sprite = [2,13,14,14];
+    obj.spawnTimer = 100;
+    obj.tick = function ()//called once per frame to decide on what enemy should do
+    {
+        this.spawnTimer--;
+        if(this.spawnTimer<0)
+        {
+            floorMap.rooms[character.roomLocation].enemies.push(enemyType3(this.coordinates[0],this.coordinates[1],Math.atan2(character.coordinates[0] - obj.coordinates[0],character.coordinates[1]- obj.coordinates[1])));
+            floorMap.rooms[character.roomLocation].enemies.push(enemyType3(this.coordinates[0],this.coordinates[1],Math.atan2(character.coordinates[0] - obj.coordinates[0],character.coordinates[1]- obj.coordinates[1])+0.3));
+            floorMap.rooms[character.roomLocation].enemies.push(enemyType3(this.coordinates[0],this.coordinates[1],Math.atan2(character.coordinates[0] - obj.coordinates[0],character.coordinates[1]- obj.coordinates[1])-0.3));
+            this.spawnTimer = 75;
+        }
+        this.rotationAngle = Math.atan2(this.coordinates[0]-character.coordinates[0],this.coordinates[1]-character.coordinates[1])-0.4;
+        if(this.rotationAngle>Math.PI)
+            this.rotationAngle = -Math.PI;
+        this.targetLocation = [(character.coordinates[0] + this.radius * Math.sin(this.rotationAngle)), (character.coordinates[1] + this.radius * Math.cos(this.rotationAngle))];
+        this.movementAngle = Math.atan2(this.targetLocation[0] - this.coordinates[0],this.targetLocation[1]- this.coordinates[1]);
+        this.coordinates[0] += this.speed*Math.sin(this.movementAngle);
+        this.coordinates[1] += this.speed*Math.cos(this.movementAngle);
+        if(this.health < 1)
+        {
+            explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],1));
+            floorMap.rooms[character.roomLocation].enemies.splice(floorMap.rooms[character.roomLocation].enemies.indexOf(this), 1);
+            return (true);
+        }
+        else
+            return (false);
+    };
+    obj.draw = function()
+    {
+        fgSurface.drawImage(backgroundImage, this.sprite[0], this.sprite[1], this.sprite[2], this.sprite[3],
+            Math.floor(this.coordinates[0]), Math.floor(this.coordinates[1]), this.sprite[2]*4, this.sprite[3]*4);
+    };
+    return(obj);
 }
