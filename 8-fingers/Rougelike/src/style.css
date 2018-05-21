@@ -1,0 +1,41 @@
+#subtitle
+{
+    width: 576px;
+    text-align: center;
+    color:darkolivegreen;
+    font-size: 15px;
+    font-weight: bold;
+}
+#main
+{
+    height: 576px;
+    width: 576px;
+    background-color: black;
+    position: relative;
+    border: 5px solid slategray;
+}
+h1
+{
+    width: 576px;
+    text-align: center;
+    color: cadetblue;
+}
+
+#bg
+{
+    position: absolute;
+    background-color: transparent;
+}
+
+#fg
+{
+    position: absolute;
+    background-color: transparent;
+}
+
+#ui
+{
+    top: 0px;
+    position: absolute;
+    background-color: transparent;
+}
