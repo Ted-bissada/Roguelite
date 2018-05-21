@@ -4,6 +4,7 @@
 Controls: 
 WASD for movement
 right click to shoot
+M to toggle map
 
 
 current development goals/ideas
