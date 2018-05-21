@@ -1,10 +1,3 @@
-The bat should rotate around a randomly selected point at a random radius that changes every second, instead of divebombing player - Done
-
-slime enemy that moves at 90 deg angles when he encounters an obstacle he turns 90 deg -medium would need to make enemies interact with fine collision system
-this was wrong i just need to use the rough collision system and when a slime makes contact it moves backwards* its speed then turns 90 deg downgraded to medium
-
-
-
 Each stair-room should have a boss that if defeated upgrades the player -easy would work by directly altering player stats
 -players movement speed max 5?,
 -weapon damage unlimited maximum?,
@@ -16,6 +9,7 @@ system
 -if the player wants they can ignore the boss and go for the ladder -easy
 -the ladder does not appear until the boss is dead -medium
 
+Use sprites for UI system not only do they look better text is really slow on canvas
 
 enemies should gain stats, hp and damage and some movement speed per dungeon level -easy
 
@@ -24,7 +18,12 @@ i would need to check hp pack placment against all existing room objects
 
 traps that fire fireballs at set intervals in set directions cannot die -easy
 
-slime that moves at 90 deg angles when he encounters a wall should be pushed back his speed and pick a random direction -hard
+slime that moves at 90 deg angles when he encounters a wall should be pushed back his speed and turn 90 deg -medium
+
+create sytem to control frequency of various features similar to the one controlling enemy spawn frequency
+-turn the frequency of the lakes/puddles way down they are obnoxious-easy
+have different frequencies of featues and enemies for different floors ?depending on bosses? -medium
+-for example have a floor with a slime boss spawn extra slimes and lakes
 
 boss ideas
 -bigger eyeball that fires mutiple fireballs at once, or he could spawn a regualr eyeball - Done spawns fireballs, necromancer taking over swarm boss role
@@ -35,9 +34,3 @@ boss ideas
 
 
 i should split enemy and boss scripts off from main as it will balloon in size as features are added -easy
-
-#IMPORTANT
-I should rework the controls the idea of shooting in the last direction traveled sounded good on paper but its shit for fighting things
--leave as is and work game around it -easy but bad idea
--implement mouse control for firing while movement moves to wasd -medium could work well
--shift firing to wasd and keep movement on arrow keys for a semi twin-stick setup -hard needs more research

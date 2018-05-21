@@ -11,7 +11,8 @@ bgSurface.imageSmoothingEnabled = false;
 let uiCanvas = document.getElementById("ui");//getting canvas
 let uiSurface = uiCanvas.getContext("2d");//setting canvas for drawing
 uiSurface.imageSmoothingEnabled = false;
-uiSurface.fillStyle = 'white';//text colour for text used on canvas
+
+uiSurface.fillStyle = 'white';//text colour for text used on canvas ui, to be removed and replaced
 
 //var audioAttack = new Audio();//example audio loading
 //audioAttack.src = "data/foo.mp3";
@@ -22,10 +23,21 @@ backgroundImage.src = "data/dungeon_tiles.png";
 let explosionImage = new Image();//loading a spite sheet i downloaded
 explosionImage.src = "data/explosion.png";
 
+let mouseDown = false;
 let keysPressed = [];//an array that holds the keys currently down
+let mousePos;
 
 document.addEventListener("keydown",keyDownHandler,false);
 document.addEventListener("keyup",keyUpHandler,false);
+
+document.addEventListener("mousedown", mouseDownListner);
+document.addEventListener("mouseup", mouseUpListner);
+
+fgCanvas.addEventListener('mousemove', function(evt)
+{
+    mousePos = getMousePos(fgCanvas, evt);
+}, false);
+
 
 let character = createCharacter();//creates and holds character
 let explosions = [];
@@ -36,9 +48,39 @@ let floorMap = generateFloorMap(0);
 connectRooms();
 
 let gameOver = false;
-showHitBox = false; //dev tool on/off
-showMap = false; //dev tool on/off
+let showHitBox = false; //dev tool on/off
+let showMap = false; //dev tool on/off
+let mapToggleTimer = 0;
 
+function keyDownHandler(e) //appends key to array if it is not already present
+{
+    if(!keysPressed.includes(e.keyCode))
+        keysPressed.push(e.keyCode)
+}
+
+function keyUpHandler(e) //removes specified key from array
+{
+    keysPressed.splice(keysPressed.indexOf(e.keyCode), 1);
+}
+
+function mouseDownListner()
+{
+    mouseDown = true;
+}
+
+function mouseUpListner()
+{
+    mouseDown = false;
+}
+
+function getMousePos(canvas, evt)
+{
+    var rect = canvas.getBoundingClientRect();
+    return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+    };
+}
 window.onload = function() //this prevents game from starting before all assets are loaded
 {
     drawBackground();
@@ -113,33 +155,33 @@ function drawMap()
 
 function drawUI() // draws UI ontop of everything else currently showing debug info
 {
-    uiSurface.clearRect(0,0,600,100);
-    uiSurface.font = "10px Courier New";
-    uiSurface.fillText("x: "+Math.floor(character.coordinates[0]).toString(), 50, 10);
-    uiSurface.fillText("y: "+Math.floor(character.coordinates[1]).toString(), 50, 30);
-    uiSurface.fillText("angle: "+(character.bulletAngle.toFixed(3)).toString(), 100, 10);
-    uiSurface.fillText("attack cd: "+character.attackChargeTimer.toString(), 100, 30);
-    uiSurface.fillText("Room: "+character.roomLocation.toString(), 200, 10);
-    uiSurface.fillText("Health: "+character.health.toString(), 200, 30);
-    uiSurface.fillText("# of Rooms: "+floorMap.rooms.length.toString(), 310, 10);
-    uiSurface.fillText("# of Rooms placed: "+floorMap.map.length.toString(), 310, 30);
-    uiSurface.fillText("Last Placed room: "+floorMap.map[floorMap.map.length-1][2].toString(), 400, 10);
-    uiSurface.fillText("current floor "+floorMap.floor.toString(), 450, 30);
+    //uiSurface.clearRect(0,0,600,100);
+    //uiSurface.font = "10px Courier New";
+    //uiSurface.fillText(keysPressed.toString(),10,10);
 
 }
 
 function userInputHandler() //accepts and applies player input
 {
-    if(keysPressed.includes(37))//left
+    if(keysPressed.includes(65))//left
         character.baseVector[0]-=1;
-    if(keysPressed.includes(39))//right
+    if(keysPressed.includes(68))//right
         character.baseVector[0]+=1;
-    if(keysPressed.includes(38))//up
+    if(keysPressed.includes(87))//up
         character.baseVector[1]-=1;
-    if(keysPressed.includes(40))//down
+    if(keysPressed.includes(83))//down
         character.baseVector[1]+=1;
-    if(keysPressed.includes(32))//spacebar
+    if(keysPressed.includes(77) && mapToggleTimer < 1)//down
+    {
+        mapToggleTimer =10;
+        showMap = !showMap;
+    }
+    if(mouseDown === true) // moved attack system to mouse driven
         character.attack();
+
+    if(mapToggleTimer>0)
+        mapToggleTimer--;
+
 }
 
 function gameLogic() //updates all game functions and ai
@@ -266,17 +308,6 @@ function newExplosion(x,y,type)
     return obj;
 }
 
-function keyDownHandler(e) //appends key to array if it is not already present
-{
-    if(!keysPressed.includes(e.keyCode))
-        keysPressed.push(e.keyCode)
-}
-
-function keyUpHandler(e) //removes specified key from array
-{
-    keysPressed.splice(keysPressed.indexOf(e.keyCode), 1);
-}
-
 function createCharacter() //generates and contains game character
 {
     let obj = {};
@@ -284,7 +315,8 @@ function createCharacter() //generates and contains game character
     obj.baseVector = [0,0];//what directions the player is traveling only uses 1 0 and -1
     obj.hitbox= [4,14,26,26]; //offset from coordinates and then w and h of hitbox
     obj.angleFacing = 0; //angle character is facing
-    obj.bulletAngle = 0;  //last direction facing used for bullets
+    obj.bulletTarget = [0,0];
+    obj.bulletAngle = 0;  //angle to fireBullets
     obj.bullets = []; //bullets in the air
     obj.maxHealth = 5;
     obj.health = 5; // health
@@ -298,23 +330,25 @@ function createCharacter() //generates and contains game character
     {
         if (this.attackChargeTimer === 0 && this.bullets.length < this.currentWeapon.bullets)
         {
+            //this.bulletTarget[0] = mousePos.x;
+            //this.bulletTarget[1] = mousePos.y;
+            this.bulletAngle = Math.atan2(mousePos.x-character.coordinates[0], mousePos.y-character.coordinates[1]);
             this.bullets.push(newBullet());
             this.attackChargeTimer = this.currentWeapon.reload;
         }
     };
     obj.tick = function ()
     {
+        this.angleFacing = Math.atan2(this.baseVector[0], this.baseVector[1]);
+        if(this.baseVector[0] !== 0 || this.baseVector[1] !== 0 )
+        {
+            this.coordinates[0] += this.speed * Math.sin(this.angleFacing);
+            this.coordinates[1] += this.speed * Math.cos(this.angleFacing);
+        }
+        this.speed = this.trueSpeed; //resets speed to shed slowing effects
+        this.baseVector = [0,0]; //resets character movment vector
         if (this.attackChargeTimer > 0)//recharging attack timer
             this.attackChargeTimer--;
-        this.angleFacing = Math.atan2(this.baseVector[0], this.baseVector[1]);
-        if(this.baseVector[0] !== 0 || this.baseVector[1]!== 0)//applies character movment to bullet firing direction unless char is not moving
-        {
-            this.coordinates[0] += this.speed*Math.sin(this.angleFacing);
-            this.coordinates[1] += this.speed*Math.cos(this.angleFacing);
-            this.bulletAngle = this.angleFacing;
-        }
-        this.speed = this.trueSpeed;
-        this.baseVector = [0,0]; //resets character movment vector
         if(this.health<1)
         {
             gameOver = true;
@@ -786,7 +820,7 @@ function connectRooms()
     }
     placeStairs(floorMap.map[floorMap.map.length-1][2]); //places stairs, first attemps last room placed 15 times if fails randomly selects rooms and repeats
 
-    for(let i =1; i < floorMap.map.length; i++)
+    for(let i =1; i < floorMap.map.length; i++) //adds enemies
     {
         if(floorMap.map[i][2] !== floorMap.stairRoom)
             addEnemies(floorMap.map[i][2]);
