@@ -155,9 +155,15 @@ function drawMap()
 
 function drawUI() // draws UI ontop of everything else currently showing debug info
 {
-    //uiSurface.clearRect(0,0,600,100);
+    uiSurface.clearRect(0,0,600,100);
     //uiSurface.font = "10px Courier New";
     //uiSurface.fillText(keysPressed.toString(),10,10);
+    for(let i=0;i<Math.floor(character.health/2);i++)
+        uiSurface.drawImage(backgroundImage,1,56,16,17,5+(35*i),5,16*2,17*2);
+    if(character.health%2 === 1)
+        uiSurface.drawImage(backgroundImage,1,71,16,17,5+(35*(Math.floor(character.health/2))),5,16*2,17*2);
+    for(let i=0;i<Math.ceil((character.maxHealth-character.health)/2)-character.health%2;i++)
+        uiSurface.drawImage(backgroundImage,1,86,16,17,5+(35*(i+Math.ceil(character.health/2))),5,16*2,17*2);
 
 }
 
@@ -318,8 +324,8 @@ function createCharacter() //generates and contains game character
     obj.bulletTarget = [0,0];
     obj.bulletAngle = 0;  //angle to fireBullets
     obj.bullets = []; //bullets in the air
-    obj.maxHealth = 5;
-    obj.health = 5; // health
+    obj.maxHealth = 6;
+    obj.health = 6; // health
     obj.sprite = [195,160,15,20,];
     obj.roomLocation = 0;
     obj.currentWeapon = generateWeapon(1,60,3,2,20,0);//dmg, bullet time to live,bullet speed, max bullets, reload timer, special attribute
@@ -351,9 +357,17 @@ function createCharacter() //generates and contains game character
             this.attackChargeTimer--;
         if(this.health<1)
         {
+            if(!gameOver)
+            {
+                explosions.push(newExplosion(this.coordinates[0],this.coordinates[1],0));
+                explosions.push(newExplosion(this.coordinates[0]+10,this.coordinates[1]+10,0));
+                explosions.push(newExplosion(this.coordinates[0]-10,this.coordinates[1]-10,0));
+                explosions.push(newExplosion(this.coordinates[0]-10,this.coordinates[1]+10,0));
+                explosions.push(newExplosion(this.coordinates[0]+10,this.coordinates[1]-10,0));
+                this.sprite = [0, 0, 0, 0]; //makes sprite disapear
+                this.hitbox= [1000,1000,0,0]; //makes hitbox 0 by 0 and moves it out of bounds
+            }
             gameOver = true;
-            this.sprite = [0, 0, 0, 0];
-            this.hitbox= [1000,1000,0,0]; //offset from coordinates and then w and h of hitbox
         }
     };
     return (obj);
@@ -863,7 +877,7 @@ function addEnemies(room)
     let random;
     while(points > 0)
     {
-        random = Math.floor(Math.random()*100)
+        random = Math.floor(Math.random()*100);
         if(random <50)
         {
             for(let i=0;i<3;i++)
@@ -873,6 +887,10 @@ function addEnemies(room)
         else if(random < 75)
         {
             floorMap.rooms[room].enemies.push(enemyType2());
+            points--;
+        }
+        else
+        {
             points--;
         }
     }

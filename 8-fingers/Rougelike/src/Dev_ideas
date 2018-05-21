@@ -3,34 +3,48 @@ Each stair-room should have a boss that if defeated upgrades the player -easy wo
 -weapon damage unlimited maximum?,
 -weapon recharge time 7 frames minimum?,
 -Number of bullets allowed no max needed,
--maximum hp no max needed,
+-maximum hp no max 20?,
 -number of bullets fired in a spread per shot max 5?
 system
+-maybe have boss explode into pickups on death and have them drift towards player
 -if the player wants they can ignore the boss and go for the ladder -easy
--the ladder does not appear until the boss is dead -medium
+-the ladder does not appear until the boss is dead -set flag on floor creation to hide stairs have boss death remove flag
 
-Use sprites for UI system not only do they look better text is really slow on canvas
+a transition animation for going down ladders to make it less abrupt and to cover the frame hitch generating a new floor causes
+-could be done with a flag similar to the gameOver flag to disable player movement and then re-enable after new floor is loaded
 
-enemies should gain stats, hp and damage and some movement speed per dungeon level -easy
+Use sprites for UI system not only do they look better text is really slow on canvas - started
 
-health pickups should be implemented as enemies that cannot move and are placed legally by player rules and give negative damage on hit -medium
-i would need to check hp pack placment against all existing room objects
+enemies should gain stats, hp and damage and some movement speed per dungeon level -easy -UNIMPORTANT
 
-traps that fire fireballs at set intervals in set directions cannot die -easy
+health pickups should be implemented as enemies that negative damage on hit
+-i would need to check hp pack placement against all existing room objects -medium
+-i could make hp pickups follow bat movement rules -easy
+-when enemies dies they have a chance to spawn an hp pickup that just moves towards you it can be destroyed if you shoot it by accident it does
+negative dmg on contact but if your current hp > maxhp current hp = maxhp
 
-slime that moves at 90 deg angles when he encounters a wall should be pushed back his speed and turn 90 deg -medium
+traps that fire fireballs at set intervals in set directions cannot die -easy -IMPORTANT
 
-create sytem to control frequency of various features similar to the one controlling enemy spawn frequency
--turn the frequency of the lakes/puddles way down they are obnoxious-easy
-have different frequencies of featues and enemies for different floors ?depending on bosses? -medium
+slime that moves at 90 deg angles when he encounters a wall should be pushed back his speed and turn 90 deg -medium -IMPORTANT
+
+create sytem to control frequency of various features similar to the one controlling enemy spawn frequency -UNIMPORTANT
+-turn the frequency of the lakes/puddles down they are obnoxious-easy
+have different frequencies of featues and enemies for different floors ?depending on bosses?
 -for example have a floor with a slime boss spawn extra slimes and lakes
 
 boss ideas
--bigger eyeball that fires mutiple fireballs at once, or he could spawn a regualr eyeball - Done spawns fireballs, necromancer taking over swarm boss role
-
 -giant slime that charges and destroys obstacles in path leaving a slowing trail behind him -hard
-
 -necromancer teleports' around and summons bats en mass -easy
 
+boss hp bars
+-have the boss draw to ui
+-have the boss set a flag
 
-i should split enemy and boss scripts off from main as it will balloon in size as features are added -easy
+i should split enemy and boss scripts off from main as it will balloon in size as features are added -easy -UNIMPORTANT
+
+implement treasure chests or some-sort of bonus for exploring floors -IMPORTANT
+-can have incentives in chests -maybe a shield that gives temporary invincibility or absorbs some hits
+-can have exp granted for killing enemies -maybe give max hp, and move speed on level up while bossees give out weapon bonuses
+-could disable map to force exploration - i dislike this idea
+
+-have enemy and player fireballs die on contact with terrain ?
