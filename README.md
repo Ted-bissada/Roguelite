@@ -27,7 +27,7 @@ a transition animation for going down ladders to make it less abrupt and to cove
 
 Use sprites for UI system not only do they look better text is really slow on canvas - started
 
-enemies should gain stats, hp and damage and some movement speed per dungeon level -UNIMPORTANT
+enemies will not level up it feels bad for behaviours to change but bosses will gain hp dmg and adds per level
 
 health pickups should be implemented as enemies that do negative damage on hit
 -when enemies dies they have a chance to spawn an hp pickup that just moves towards you
